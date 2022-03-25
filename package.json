@@ -1,0 +1,28 @@
+{
+	"name": "phishing",
+	"version": "1.0.0",
+	"description": "Easy phishing tool",
+	"main": "src/app.js",
+	"scripts": {
+		"start": "cd src && node app.js"
+	},
+	"keywords": [
+		"phishing",
+		"gamerboytr",
+		"javascriptphising",
+		"jsphisher"
+	],
+	"author": "GamerboyTR",
+	"license": "MIT",
+	"dependencies": {
+		"axios": "^0.26.1",
+		"body-parser": "^1.19.2",
+		"chalk": "4",
+		"express": "^4.17.3",
+		"fs": "^0.0.1-security",
+		"geoip-lite": "^1.4.4",
+		"ngrok": "^4.3.1",
+		"path": "^0.12.7",
+		"ua-parser-js": "^1.0.2"
+	}
+}
