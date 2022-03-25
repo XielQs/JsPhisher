@@ -1,0 +1,2 @@
+# JsPhisher
+Easy phishing tool
