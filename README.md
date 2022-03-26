@@ -39,10 +39,10 @@
  - ```cd JsPhisher```
 
 ##### Run the tool
- - ```npm install```
+ - ```npm start```
 
 ##### Or use yarn
- - ```yarn install```
+ - ```yarn start```
 
 
 ### Features:
