@@ -194,7 +194,8 @@ function installRequirements() {
 			console.log(chalk.yellow`${logInfo2} Extracting...`);
 			if (isLinux) {
 				child_process.execSync(`tar -xvf ${path.join(__dirname, "bin", "ngrok.tgz")} -C ${path.join(__dirname, "bin")}`);
-				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.zip"));
+				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.tgz"));
+				fs.renameSync(path.join(__dirname, "bin", "ngrok"), path.join(__dirname, "bin", "ngrok.deb"));
 			} else {
 				new AdmZip(path.join(__dirname, "bin", "ngrok.zip")).extractAllTo(path.join(__dirname, "bin"));
 				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.zip"));
