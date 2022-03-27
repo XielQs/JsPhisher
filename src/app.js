@@ -33,8 +33,8 @@ const short = require("./short");
 const path = require("path");
 const fs = require("fs");
 
-const VERSION = "1.2";
-const isLinux = process.platform === "linux";
+const VERSION = "1.1";
+const isLinux = process.platform === "linux" || process.platform === "android";
 const logAsk = chalk.greenBright`[{whiteBright ?}]`;
 const logSuccess = chalk.yellowBright`[{whiteBright √}]`;
 const logError = chalk.redBright`[{whiteBright !}]`;
@@ -157,7 +157,8 @@ function controlVersion() {
 				console.log(logLogo);
 				console.log(chalk.greenBright`${logSuccess} Updating...\n`);
 				console.log(chalk.yellow`${logInfo} Downloading repo...`);
-				child_process.execSync(`cd .. && ${isLinux ? "rm -rf JsPhisher" : "rmdir /S /Q JsPhisher"} && git clone https://github.com/gamerboytr/JsPhisher`);
+				const currentDir = process.cwd().replaceAll("\\", "/").split("/")[process.cwd().replaceAll("\\", "/").split("/").length - 2];
+				child_process.execSync(`cd ../.. && ${isLinux ? `rm -rf ${currentDir}` : `rmdir /S /Q ${currentDir}`} && git clone https://github.com/gamerboytr/JsPhisher`);
 				console.log(chalk.yellow`${logInfo} Updated!\n`);
 				console.log(chalk.yellow`${logInfo} Please restart terminal manually.\n`);
 				if (changelog) {
