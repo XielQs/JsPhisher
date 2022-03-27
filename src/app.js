@@ -34,7 +34,8 @@ const path = require("path");
 const fs = require("fs");
 
 const VERSION = "1.2";
-const isLinux = process.platform === "linux" || process.platform === "android";
+const isTermux = process.platform === "android";
+const isLinux = process.platform === "linux" || isTermux;
 const logAsk = chalk.greenBright`[{whiteBright ?}]`;
 const logSuccess = chalk.yellowBright`[{whiteBright √}]`;
 const logError = chalk.redBright`[{whiteBright !}]`;
@@ -67,6 +68,10 @@ app.disable("x-powered-by");
 (async () => {
 	await controlVersion();
 	await installRequirements();
+	if (isTermux) {
+		console.log(chalk.magenta`${logInfo} If you haven't enabled hotspot, please enable it!\n`);
+		await new Promise(r => setTimeout(r, 1000));
+	}
 	console.log(chalk.magenta`${logInfo2} Initializing local server at localhost:${port}...\n`);
 	await new Promise(r =>
 		app.listen(port, _ => {
@@ -185,6 +190,7 @@ function installRequirements() {
 			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${process.arch ?? "arm"}.deb` : "windows-386.exe"}`;
 			await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${!isLinux ? ".exe" : ""}` }).catch(reject);
 			console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
+			if (isLinux) child_process.execSync(`chmod +x ${path.join(__dirname, "bin", "cloudflared")}`);
 		}
 		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading ngrok...`);
