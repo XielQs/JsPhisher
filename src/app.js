@@ -180,22 +180,21 @@ function installRequirements() {
 	return new Promise(async (resolve, reject) => {
 		console.clear();
 		console.log(logLogo);
-		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${isLinux ? ".deb" : ".exe"}`))) {
+		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
-			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? "linux-386.deb" : "windows-386.exe"}`;
-			await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${isLinux ? ".deb" : ".exe"}` }).catch(reject);
+			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${process.arch ?? "arm"}.deb` : "windows-386.exe"}`;
+			await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${!isLinux ? ".exe" : ""}` }).catch(reject);
 			console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
 		}
-		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${isLinux ? ".deb" : ".exe"}`))) {
+		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading ngrok...`);
-			const ngrokLink = `https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-${isLinux ? "linux-386.tgz" : "windows-386.zip"}`;
+			const ngrokLink = `https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-${isLinux ? `linux-${process.arch ?? "arm"}.tgz` : "windows-386.zip"}`;
 			await downloader(ngrokLink, path.join(__dirname, "bin"), { filename: `ngrok${isLinux ? ".tgz" : ".zip"}` }).catch(reject);
 			console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
 			console.log(chalk.yellow`${logInfo2} Extracting...`);
 			if (isLinux) {
 				child_process.execSync(`tar -xvf ${path.join(__dirname, "bin", "ngrok.tgz")} -C ${path.join(__dirname, "bin")}`);
 				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.tgz"));
-				fs.renameSync(path.join(__dirname, "bin", "ngrok"), path.join(__dirname, "bin", "ngrok.deb"));
 			} else {
 				new AdmZip(path.join(__dirname, "bin", "ngrok.zip")).extractAllTo(path.join(__dirname, "bin"));
 				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.zip"));
