@@ -214,7 +214,7 @@ function installRequirements() {
 
 function openNgrok(port) {
 	return new Promise(async (resolve, reject) => {
-		child_process.spawn("bin/ngrok.exe", ["http", port]);
+		child_process.spawn("bin/ngrok", ["http", port]);
 		await new Promise(r => setTimeout(r, 3000));
 		const { data } = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
 		if (!data) return reject("Failed to start ngrok, please try again");
