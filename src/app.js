@@ -218,14 +218,13 @@ function openNgrok(port) {
 		child_process.spawn("bin/ngrok", ["http", port]);
 		await new Promise(r => setTimeout(r, 3000));
 		let request = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
-		let tunnel = null;
-		if (!request.data) return reject("Failed to start ngrok, please try again");
-		if (!request.data.tunnels.length) {
+		if (!request?.data) return reject("Failed to start ngrok, please try again");
+		if (!request.data?.tunnels) {
 			await new Promise(r => setTimeout(r, 5000));
 			request = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
 		}
-		if (!request.data || !request.data.tunnels.length) return reject("Failed to start ngrok, please try again");
-		resolve((data.tunnels?.[1] ?? data.tunnels?.[0]).public_url);
+		if (!request?.data || !request?.data?.tunnels?.length) return reject("Failed to start ngrok, please try again");
+		resolve((request.data.tunnels?.[1] ?? request.data.tunnels?.[0]).public_url);
 	});
 }
 
