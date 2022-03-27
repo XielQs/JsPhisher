@@ -33,7 +33,7 @@ const short = require("./short");
 const path = require("path");
 const fs = require("fs");
 
-const VERSION = "1.1";
+const VERSION = "1.2";
 const isLinux = process.platform === "linux" || process.platform === "android";
 const logAsk = chalk.greenBright`[{whiteBright ?}]`;
 const logSuccess = chalk.yellowBright`[{whiteBright √}]`;
