@@ -1,3 +1,6 @@
+[2022-4-7] 1.2.1
+- Bug fixs
+
 [2022-3-27] 1.2
 - Added automatic ngrok downloader
 - Fixed type errors

