@@ -194,13 +194,29 @@ function controlVersion() {
 	});
 }
 
+function getArch() {
+	let arch = process.arch;
+	if (isLinux) {
+		if (arch === "x64") {
+			arch = "amd64";
+		} else if (arch === "x32") {
+			arch = "amd";
+		}
+	} else {
+		if (arch === "x32") {
+			arch = "386";
+		}
+	}
+	return arch;
+}
+
 function installRequirements() {
 	return new Promise(async (resolve, reject) => {
 		console.clear();
 		console.log(logLogo);
 		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
-			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${process.arch === "x64" ? "amd64" : "amd"}.deb` : "windows-386.exe"}`;
+			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${getArch()}.deb` : "windows-386.exe"}`;
 			try {
 				await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${!isLinux ? ".exe" : ""}` }).catch(reject);
 				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
@@ -214,7 +230,7 @@ function installRequirements() {
 		}
 		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading ngrok...`);
-			const ngrokLink = `https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-${isLinux ? `linux-${process.arch === "x64" ? "amd64" : "amd"}.tgz` : "windows-386.zip"}`;
+			const ngrokLink = `https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-${isLinux ? `linux-${getArch()}.tgz` : "windows-386.zip"}`;
 			try {
 				await downloader(ngrokLink, path.join(__dirname, "bin"), { filename: `ngrok${isLinux ? ".tgz" : ".zip"}` }).catch(reject);
 				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
@@ -260,7 +276,7 @@ function openNgrok(port) {
 		while (!ngrokUrl) {
 			try {
 				let request = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
-				if (request?.data?.tunnels) {
+				if (request?.data?.tunnels?.[0]?.public_url) {
 					ngrokUrl = (request.data.tunnels?.[1] ?? request.data.tunnels?.[0]).public_url;
 				} else {
 					await new Promise(r => setTimeout(r, 1000));
