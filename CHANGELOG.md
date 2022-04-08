@@ -1,3 +1,9 @@
+[2022-4-8] 1.3
+- Changed version to 1.3
+- Now JsPhisher support multi websites
+- Fixed Bugs
+- Removed src/bin/instagram.zip
+
 [2022-4-7] 1.2.1
 - Bug fixs
 

