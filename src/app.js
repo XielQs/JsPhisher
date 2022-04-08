@@ -35,7 +35,7 @@ const short = require("./short");
 const path = require("path");
 const fs = require("fs");
 
-const VERSION = "1.2";
+const VERSION = "1.2.1";
 const isTermux = process.platform === "android";
 const isLinux = process.platform === "linux" || isTermux;
 const logAsk = chalk.greenBright`[{whiteBright ?}]`;
