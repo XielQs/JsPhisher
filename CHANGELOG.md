@@ -1,7 +1,12 @@
+[2022-4-9] 1.3.1
+- Fixed bugs
+- Fixed multi website
+- Changed saving ip.txt and accounts.txt
+
 [2022-4-8] 1.3
 - Changed version to 1.3
 - Now JsPhisher support multi websites
-- Fixed Bugs
+- Fixed bugs
 - Removed src/bin/instagram.zip
 
 [2022-4-7] 1.2.1

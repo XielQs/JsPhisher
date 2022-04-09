@@ -1,7 +1,7 @@
 <h1 align="center">JsPhisher</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.3-green?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Version-1.3.1-green?style=for-the-badge">
   <img src="https://img.shields.io/github/stars/gamerboytr/JsPhisher?style=for-the-badge&color=orange">
   <img src="https://img.shields.io/github/forks/gamerboytr/JsPhisher?color=cyan&style=for-the-badge&color=purple">
   <img src="https://img.shields.io/github/issues/gamerboytr/JsPhisher?color=red&style=for-the-badge">

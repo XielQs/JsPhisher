@@ -1,7 +1,8 @@
 {
 	"name": "jsphisher",
-	"version": "1.3",
+	"version": "1.3.1",
 	"description": "Easy phishing tool",
+	"repository": "gamerboytr/JSPhisher",
 	"main": "src/app.js",
 	"scripts": {
 		"start": "cd src && node app.js"
@@ -12,7 +13,14 @@
 		"javascriptphising",
 		"jsphisher"
 	],
-	"author": "GamerboyTR",
+	"author": {
+		"email": "offical.gamerboytr@yandex.com",
+		"name": "GamerboyTR",
+		"url": "https://www.gamermunity.ml"
+	},
+	"engines": {
+		"node": ">=12"
+	},
 	"license": "GPL-3.0",
 	"dependencies": {
 		"adm-zip": "^0.5.9",
