@@ -266,7 +266,7 @@ function installRequirements() {
 		//! Cloudflared
 		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
-			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${getArch()}.deb` : "windows-386.exe"}`;
+			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${getArch()}` : "windows-386.exe"}`;
 			try {
 				await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${!isLinux ? ".exe" : ""}` }).catch(reject);
 				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
@@ -331,9 +331,6 @@ function openCloudflared(port) {
 	return new Promise((resolve, reject) => {
 		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
 			return reject("Cannot found cloudlfared!");
-		}
-		if (isTermux) {
-			return reject("Cloudflared is not supported on Termux");
 		}
 		let cfUrl;
 		let cfShowed = false;
@@ -474,13 +471,11 @@ async function startServer() {
 	const shortNgrok = await short(ngrok).catch(throwError);
 	const cloudflared = !isTermux ? await openCloudflared(port).catch(throwError) : null;
 	const shortCf = !isTermux ? await short(cloudflared).catch(throwError) : null;
-	if (!isTermux) {
-		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-		console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
-		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${siteConfig.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
-	}
 	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "3"} > {yellowBright ${ngrok}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL ${isTermux ? "1" : "4"} > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${siteConfig.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
+	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
+	console.log(chalk.magenta`${logInfo2} URL 3 > {yellowBright ${ngrok}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL $3 > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
 }
