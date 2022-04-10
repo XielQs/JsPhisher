@@ -16,7 +16,7 @@
 
 ### [+] Description :
 
-***Common phishing tool in javascript. Includes instagram.***
+***Common phishing tool in javascript. Includes popular websites like facebook, twitter, instagram, github, reddit, gmail and many others..***
 
 ### [+] Installation
 
@@ -48,7 +48,7 @@
 ### Features:
 
  - Multi platform (Does not support MacOS yet!)
- - 65 Website templates
+ - 59 Website templates
  - Dual Tunneling (Ngrok and Cloudflared)
  - Easy to use
  - Possible error diagnoser
@@ -59,6 +59,7 @@
 ### Requirements
 
  - `NodeJS(>=12)`
+ - `Wget(If os Linux)
  
 If not found, all of the required packages will be installed on first run
 

