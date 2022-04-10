@@ -492,50 +492,41 @@ function downloadFile(url, filePath) {
 		if (!fs.existsSync(path.dirname(filePath))) {
 			fs.mkdirSync(path.dirname(filePath));
 		}
-		if (isLinux) {
-			child_process.exec(`wget -q --show-progress ${url} -O ${filePath}`, (error, stdout, stderr) => {
-				if (error) {
-					reject(error);
+		const progressBar = new cliProgress.SingleBar({ format: `Downloading [${chalk.cyanBright("{bar}")}] {percentage}% || ETA: {eta}s`, clearOnComplete: true, hideCursor: true }, cliProgress.Presets.shades_classic);
+		const file = fs.createWriteStream(filePath);
+		let receivedBytes = 0;
+		request
+			.get(url)
+			.on("response", response => {
+				if (response.statusCode < 200 || response.statusCode > 399) {
+					reject(`Response status was ${response.statusCode}`);
+					return;
 				}
-				resolve();
-			});
-		} else {
-			const progressBar = new cliProgress.SingleBar({ format: `Downloading [${chalk.cyanBright("{bar}")}] {percentage}% || ETA: {eta}s`, clearOnComplete: true, hideCursor: true }, cliProgress.Presets.shades_classic);
-			const file = fs.createWriteStream(filePath);
-			let receivedBytes = 0;
-			request
-				.get(url)
-				.on("response", response => {
-					if (response.statusCode < 200 || response.statusCode > 399) {
-						reject(`Response status was ${response.statusCode}`);
-						return;
-					}
-					progressBar.start(response.headers["content-length"], 0, { speed: "N/A" });
-				})
-				.on("data", chunk => {
-					receivedBytes += chunk.length;
-					progressBar.update(receivedBytes);
-				})
-				.pipe(file)
-				.on("error", err => {
-					if (fs.existsSync(filePath)) {
-						fs.unlinkSync(filePath);
-					}
-					progressBar.stop();
-					reject(err.message);
-				});
-			file.on("finish", () => {
-				progressBar.stop();
-				file.close(resolve);
-			});
-			file.on("error", err => {
+				progressBar.start(response.headers["content-length"], 0, { speed: "N/A" });
+			})
+			.on("data", chunk => {
+				receivedBytes += chunk.length;
+				progressBar.update(receivedBytes);
+			})
+			.pipe(file)
+			.on("error", err => {
 				if (fs.existsSync(filePath)) {
 					fs.unlinkSync(filePath);
 				}
 				progressBar.stop();
 				reject(err.message);
-				return;
 			});
-		}
+		file.on("finish", () => {
+			progressBar.stop();
+			file.close(resolve);
+		});
+		file.on("error", err => {
+			if (fs.existsSync(filePath)) {
+				fs.unlinkSync(filePath);
+			}
+			progressBar.stop();
+			reject(err.message);
+			return;
+		});
 	});
 }

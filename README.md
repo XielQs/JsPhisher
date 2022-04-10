@@ -59,7 +59,6 @@
 ### Requirements
 
  - `NodeJS(>=12)`
- - `Wget(If os Linux)
  
 If not found, all of the required packages will be installed on first run
 
