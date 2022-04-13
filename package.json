@@ -5,7 +5,9 @@
 	"repository": "gamerboytr/JSPhisher",
 	"main": "src/app.js",
 	"scripts": {
-		"start": "cd src && node app.js"
+		"start": "cd src && node app.js",
+		"lint": "eslint src/**/*.js",
+		"lint:fix": "eslint src/**/*.js --fix"
 	},
 	"keywords": [
 		"phishing",
@@ -34,5 +36,12 @@
 		"readline-sync": "^1.4.10",
 		"request": "^2.88.2",
 		"ua-parser-js": "^1.0.2"
+	},
+	"devDependencies": {
+		"eslint": "^7.32.0",
+		"eslint-config-standard": "^16.0.3",
+		"eslint-plugin-import": "^2.26.0",
+		"eslint-plugin-node": "^11.1.0",
+		"eslint-plugin-promise": "^5.2.0"
 	}
 }

