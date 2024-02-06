@@ -2,13 +2,13 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-1.3.1-green?style=for-the-badge">
-  <img src="https://img.shields.io/github/stars/gamerboytr/JsPhisher?style=for-the-badge&color=orange">
-  <img src="https://img.shields.io/github/forks/gamerboytr/JsPhisher?color=cyan&style=for-the-badge&color=purple">
-  <img src="https://img.shields.io/github/issues/gamerboytr/JsPhisher?color=red&style=for-the-badge">
-  <img src="https://img.shields.io/github/license/gamerboytr/JsPhisher?style=for-the-badge&color=blue">   
+  <img src="https://img.shields.io/github/stars/XielQs/JsPhisher?style=for-the-badge&color=orange">
+  <img src="https://img.shields.io/github/forks/XielQs/JsPhisher?color=cyan&style=for-the-badge&color=purple">
+  <img src="https://img.shields.io/github/issues/XielQs/JsPhisher?color=red&style=for-the-badge">
+  <img src="https://img.shields.io/github/license/XielQs/JsPhisher?style=for-the-badge&color=blue">   
 <br>
 <br>
-  <img src="https://img.shields.io/badge/Author-GamerboyTR-purple?style=flat-square">
+  <img src="https://img.shields.io/badge/Author-XielQ-purple?style=flat-square">
   <img src="https://img.shields.io/badge/Open%20Source-Yes-cyan?style=flat-square">
   <img src="https://img.shields.io/badge/Written%20In-JavaScript-blue?style=flat-square">
 </p>
@@ -33,7 +33,7 @@
 
 ##### Clone this repository
 
- - ```git clone https://github.com/gamerboytr/JsPhisher```
+ - ```git clone https://github.com/XielQs/JsPhisher```
 
 ##### Enter the directory
  - ```cd JsPhisher```
@@ -81,7 +81,7 @@ If not found, all of the required packages will be installed on first run
 
 ### This repository is open source to help others. So if you wish to copy, consider giving credit!
 
-## Credits: <a href="https://github.com/gamerboytr">GamerboyTR</a>
+## Credits: <a href="https://github.com/XielQs">XielQ</a>
 
 #### If this tool helped you, consider staring repository. Your stars encourage me a lot!
 
